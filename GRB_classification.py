@@ -378,7 +378,28 @@ if __name__ == "__main__":
     plt.legend()
     plt.savefig(main_dir+"\\Results\\Data_and_model.png")
 
-
     # plt.show()
-    # it does not found the maxima of the posterior, it wanders around testing all values but not the maximum
-    # tomorrow: plot with new parameters. Burn-in and autocorrelation? 
+    plt.close('all')
+    # Second point of the exercise: classificate a GRB
+    T = 2.0
+    log_T = np.log(2.0)
+
+    w_normal_1_at_T = par_val[0] * gauss(log_T, par_val[1], par_val[2])
+    w_normal_2_at_T = (1-par_val[0]) * gauss(log_T, par_val[3], par_val[4])
+    pdf_at_T = weighted_log_normal(log_T, par_val)
+    
+    prob_short = 0.5 * w_normal_1_at_T/pdf_at_T
+    prob_long = 0.5 * w_normal_2_at_T/pdf_at_T
+    print(f"Probability that is short: {prob_short}")
+    print(f"Probability that is long: {prob_long}")
+    print(f"Probability that is long or short: {prob_short+prob_long}")
+
+    plt.figure("Model with GRB to classificate")
+    plt.axvline(log_T, color = 'C0', label = "GRB170817A", linestyle = 'dashed')
+    plt.plot(xx, pdf, 'r', label = "Model")
+    plt.plot(xx, w_normal_1, 'g', label = "Norm 1", alpha = 0.5)
+    plt.plot(xx, w_normal_2, color = 'orange', label = "Norm 2", alpha = 0.5)
+    plt.xlabel("$\\log(T_{90})$")
+    plt.ylabel("Normalized Counts")
+    plt.legend()
+    plt.show()
