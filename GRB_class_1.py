@@ -1,11 +1,4 @@
 import numpy as np
-import os
-import sys
-
-main_dir = os.path.dirname(os.path.realpath(__file__))
-parentdir = os.path.dirname(main_dir)
-sys.path.insert(0, parentdir) 
-
 from pdf_analysis import errors_around_peak
 
 def gauss(x, mu, sigma):
@@ -280,7 +273,7 @@ if __name__ == "__main__":
         ax.set_ylabel(par_name[i])
     ax.set_xlabel("Iteration")
     plt.tight_layout()
-    plt.savefig(main_dir+"\\Results\\Parameters_chain.png")
+    #plt.savefig(main_dir+"\\Results\\Parameters_chain.png")
 
     burnin = 250 
     fig = plt.figure("Parameters chain: zoom to burn-in", figsize = (6,6))
@@ -293,7 +286,7 @@ if __name__ == "__main__":
         ax.set_ylabel(par_name[i])
     ax.set_xlabel("Iteration")
     plt.tight_layout()
-    plt.savefig(main_dir+"\\Results\\Parameters_chain_zoom.png")
+    #plt.savefig(main_dir+"\\Results\\Parameters_chain_zoom.png")
 
     """
     fig = plt.figure("Chain posterior")
@@ -315,7 +308,7 @@ if __name__ == "__main__":
         ax.set_ylabel(par_name[i])
     ax.set_xlabel("Iteration")
     plt.tight_layout()
-    plt.savefig(main_dir+"\\Results\\Parameters_autocorr.png")
+    #plt.savefig(main_dir+"\\Results\\Parameters_autocorr.png")
 
     thinning = 100
     fig = plt.figure("Parameters autocorrelation: zoom to thinning", figsize = (6,6))
@@ -327,7 +320,7 @@ if __name__ == "__main__":
         ax.set_xlim(-50, 2 * thinning)
     ax.set_xlabel("Iteration")
     plt.tight_layout()
-    plt.savefig(main_dir+"\\Results\\Parameters_autocorr_zoom.png")
+    #plt.savefig(main_dir+"\\Results\\Parameters_autocorr_zoom.png")
     
     # after burn-in and autocorrelation we plot the histograms of the parameters
     parameters = samples[burnin:,:]
@@ -360,7 +353,7 @@ if __name__ == "__main__":
         ax.set_xlabel(par_name[i])
         ax.set_ylim(0, np.max(counts_i) * 1.1)
     plt.tight_layout()
-    plt.savefig(main_dir+"\\Results\\Parameters_hist.png")
+    #plt.savefig(main_dir+"\\Results\\Parameters_hist.png")
 
     
     pdf = weighted_log_normal(xx, par_val)
@@ -376,30 +369,9 @@ if __name__ == "__main__":
     plt.xlabel("$\\log(T_{90})$")
     plt.ylabel("Normalized Counts")
     plt.legend()
-    plt.savefig(main_dir+"\\Results\\Data_and_model.png")
+    #plt.savefig(main_dir+"\\Results\\Data_and_model.png")
 
+    # end of first point: show or close all the open figures
+    # I have commented all the savefig
     # plt.show()
     plt.close('all')
-    # Second point of the exercise: classificate a GRB
-    T = 2.0
-    log_T = np.log(2.0)
-
-    w_normal_1_at_T = par_val[0] * gauss(log_T, par_val[1], par_val[2])
-    w_normal_2_at_T = (1-par_val[0]) * gauss(log_T, par_val[3], par_val[4])
-    pdf_at_T = weighted_log_normal(log_T, par_val)
-    
-    prob_short = 0.5 * w_normal_1_at_T/pdf_at_T
-    prob_long = 0.5 * w_normal_2_at_T/pdf_at_T
-    print(f"Probability that is short: {prob_short}")
-    print(f"Probability that is long: {prob_long}")
-    print(f"Probability that is long or short: {prob_short+prob_long}")
-
-    plt.figure("Model with GRB to classificate")
-    plt.axvline(log_T, color = 'C0', label = "GRB170817A", linestyle = 'dashed')
-    plt.plot(xx, pdf, 'r', label = "Model")
-    plt.plot(xx, w_normal_1, 'g', label = "Norm 1", alpha = 0.5)
-    plt.plot(xx, w_normal_2, color = 'orange', label = "Norm 2", alpha = 0.5)
-    plt.xlabel("$\\log(T_{90})$")
-    plt.ylabel("Normalized Counts")
-    plt.legend()
-    plt.show()
