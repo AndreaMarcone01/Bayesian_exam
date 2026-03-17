@@ -1,0 +1,23 @@
+2026-03-17, 19:08:01 - raynest.raynest.raynest               : Running with 7 parallel threads
+2026-03-17, 19:08:01 - raynest.raynest.raynest               : Nested samplers: 1
+2026-03-17, 19:08:01 - raynest.raynest.raynest               : Ensemble samplers: 6
+2026-03-17, 19:08:01 - raynest.raynest.raynest               : Slice samplers: 0
+2026-03-17, 19:08:01 - raynest.raynest.raynest               : Hamiltonian samplers: 0
+2026-03-17, 19:08:01 - raynest.raynest.raynest               : ray object store size: 1.0 GB
+2026-03-17, 19:08:01 - raynest.raynest.raynest               : seed = None was passed. The results will not be reproducible.                                      Set seed = int to have a reproducible sequence.
+2026-03-17, 19:22:29 - raynest.nest2pos                      : Computed log_evidences: (np.float64(5900.675821583719),)
+2026-03-17, 19:22:29 - raynest.nest2pos                      : Relative weights of input files: [np.float64(1.0)]
+2026-03-17, 19:22:29 - raynest.nest2pos                      : Relative weights of input files taking into account their length: [np.float64(1.0)]
+2026-03-17, 19:22:29 - raynest.nest2pos                      : Number of input samples: [49190]
+2026-03-17, 19:22:29 - raynest.nest2pos                      : Expected number of samples from each input file [11126]
+2026-03-17, 19:22:29 - raynest.nest2pos                      : Samples produced: 11126
+2026-03-17, 19:22:29 - raynest.nest2pos                      : Computed log_evidences: (np.float64(5900.675821583719),)
+2026-03-17, 19:22:29 - raynest.nest2pos                      : Relative weights of input files: [np.float64(1.0)]
+2026-03-17, 19:22:29 - raynest.nest2pos                      : Relative weights of input files taking into account their length: [np.float64(1.0)]
+2026-03-17, 19:22:30 - raynest.nest2pos                      : Number of input samples: [49190]
+2026-03-17, 19:22:30 - raynest.nest2pos                      : Expected number of samples from each input file [11214]
+2026-03-17, 19:22:30 - raynest.nest2pos                      : Samples produced: 11214
+2026-03-17, 19:22:30 - raynest.raynest.raynest               : Saving output in three_class_output_J/
+2026-03-17, 19:22:30 - raynest.raynest.raynest               : Saving plots in three_class_output_J/
+2026-03-17, 19:22:40 - raynest.raynest.raynest               : Removing checkpoint file three_class_output_J/checkpoints/nested_sampler_resume_0.pkl
+2026-03-17, 19:22:42 - raynest.raynest.raynest               : ray correctly shut down. exiting

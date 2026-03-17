@@ -1,0 +1,1 @@
+w_1	mu_1	sigma_1	mu_2	sigma_2	mu_3	sigma_3	w_2	logL

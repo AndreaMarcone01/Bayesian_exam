@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.special import xlogy
 from pdf_analysis import errors_around_peak
 
 def gauss(x, mu, sigma):
@@ -49,19 +50,23 @@ def log_prior(theta, bounds):
         prior (float): prior for the sey theta 
     """
     
-    prior = np.zeros(theta.shape[0])
+    prior = 0
 
     for i in range(theta.shape[0]):
-        if i == 2 or i == 4:                    # Jeffrey prior on the sigmas
-            prior[i] = - np.log(theta[i])
         if theta[i] < bounds[i][0] or theta[i] > bounds[i][1]:
-            prior[i] = - np.inf
+            return - np.inf
     
     # check if mu_1 < mu_2. System of penalty for mu_1 near mu_2?
     if theta[1] > theta[3]:
-        prior[1] = - np.inf
+        return - np.inf
     
-    prior = np.sum(prior)
+    """# Jeffrey prior on the sigmas
+    for i in [2,4]:
+            if theta[i] <= 0:           # this should be removed by the bounds but better safe than sorry
+                return -np.inf
+            else:
+                prior += - np.log(theta[i])"""
+    
     return prior
 
 def log_likelihood(theta, counts, center, model):
@@ -80,7 +85,11 @@ def log_likelihood(theta, counts, center, model):
     N = np.sum(counts)
     dx = np.diff(center)[0]
     expected_count = N * model(center, theta) * dx
-    log_like = counts * np.log(expected_count) - expected_count
+
+    if np.any((expected_count == 0) & (counts > 0)):       # if expected == 0 we have a nan problem, but if also counts == 0 it's right
+            return -np.inf                                          # in the case that the model sees 0 counts but in realty there are return -inf
+        
+    log_like = xlogy(counts, expected_count) - expected_count
     return np.sum(log_like)
 
 def log_posterior(theta, counts, center, model, bounds):
@@ -215,21 +224,21 @@ if __name__ == "__main__":
     center = (edges[1:] + edges[:-1])*0.5
 
     par_name = np.array(["$w$", "$\\mu_1$", "$\\sigma_1$", "$\\mu_2$", "$\\sigma_2$"])
-    bounds = np.array([[0.0,1.0], [-4.0,7.0], [0.0,3.0] , [-4.0, 7.0], [0.0,3.0]])
+    bounds = np.array([[0.0,1.0], [-4.0,7.0], [0.01,3.0] , [-4.0, 7.0], [0.01,3.0]])
     theta_0 = np.array([rng.uniform(0,1),
                         rng.uniform(-4,7), 
-                        rng.uniform(0,5),
+                        rng.uniform(0.01,3),
                         rng.uniform(-4,7),
-                        rng.uniform(0,3)])
+                        rng.uniform(0.01,3)])
     theta_fit = np.array([0.4, -0.5, 1.5, 3.6, 0.8])
-
+    
     xx = np.linspace(-4,7,100)
     pdf = weighted_log_normal(xx, theta_0)
     pdf_f = weighted_log_normal(xx, theta_fit)
 
     """ # plot the data
     plt.figure("Data and model")
-    plt.plot(center, hist, '.', label = "Data")
+    plt.stairs(hist, edges, color = 'C0', label = 'Data', linewidth = 1.5)
     plt.plot(xx, pdf, 'r', label = "Model, theta random")
     plt.plot(xx, pdf_f, 'g', label = "Model, theta eye-fitted")
     #plt.plot(xx, w_normal_2, label = "Norm 2", alpha = 0.5)
@@ -275,7 +284,7 @@ if __name__ == "__main__":
         ax.set_ylabel(par_name[i])
     ax.set_xlabel("Iteration")
     plt.tight_layout()
-    #plt.savefig(main_dir+"\\Results\\Parameters_chain.png")
+    plt.savefig(main_dir+"\\Results\\Parameters_chain.png", dpi = 600)
 
     burnin = 250 
     fig = plt.figure("Parameters chain: zoom to burn-in", figsize = (6,6))
@@ -288,7 +297,7 @@ if __name__ == "__main__":
         ax.set_ylabel(par_name[i])
     ax.set_xlabel("Iteration")
     plt.tight_layout()
-    #plt.savefig(main_dir+"\\Results\\Parameters_chain_zoom.png")
+    plt.savefig(main_dir+"\\Results\\Parameters_chain_zoom.png", dpi = 600)
 
     """
     fig = plt.figure("Chain posterior")
@@ -310,7 +319,7 @@ if __name__ == "__main__":
         ax.set_ylabel(par_name[i])
     ax.set_xlabel("Iteration")
     plt.tight_layout()
-    #plt.savefig(main_dir+"\\Results\\Parameters_autocorr.png")
+    plt.savefig(main_dir+"\\Results\\Parameters_autocorr.png", dpi = 600)
 
     thinning = 100
     fig = plt.figure("Parameters autocorrelation: zoom to thinning", figsize = (6,6))
@@ -322,7 +331,7 @@ if __name__ == "__main__":
         ax.set_xlim(-50, 2 * thinning)
     ax.set_xlabel("Iteration")
     plt.tight_layout()
-    #plt.savefig(main_dir+"\\Results\\Parameters_autocorr_zoom.png")
+    plt.savefig(main_dir+"\\Results\\Parameters_autocorr_zoom.png", dpi = 600)
     
     # after burn-in and autocorrelation we plot the histograms of the parameters
     parameters = samples[burnin:,:]
@@ -350,13 +359,13 @@ if __name__ == "__main__":
         ax.stairs(counts_i, bins_i, color = 'C0', label = 'Posterior samples', linewidth = 1.5)
         
         # plot the priors, Jeffrey for sigmas and uniform for others
-        if i == 2 or i == 4:
-            a = 1e-8
+        """if i == 2 or i == 4:
+            a = bounds[i][0]
             b = bounds[i][1]
             ss = np.linspace(a, b, 100)
             ax.plot(ss, 1/(np.log(b/a) * ss), color = 'r', label = "Prior", linestyle='dashed')
-        else:
-            ax.axhline(1/(bounds[i][1] - bounds[i][0]), color = 'r', label = "Prior", linestyle='dashed')
+        else:"""
+        ax.axhline(1/(bounds[i][1] - bounds[i][0]), color = 'r', label = "Prior", linestyle='dashed')
 
         ax.axvline(par_val[i], color = 'green', label = "Peak value", linestyle='dashed')
         ax.axvline(par_val[i]+d_par_plus[i], color = 'orange', linestyle='dashed')
@@ -364,7 +373,7 @@ if __name__ == "__main__":
         ax.set_xlabel(par_name[i])
         ax.set_ylim(0, np.max(counts_i) * 1.1)
     plt.tight_layout()
-    #plt.savefig(main_dir+"\\Results\\Parameters_hist.png")
+    plt.savefig(main_dir+"\\Results\\Parameters_hist.png", dpi = 600)
 
     
     pdf = weighted_log_normal(xx, par_val)
@@ -373,14 +382,14 @@ if __name__ == "__main__":
 
     # plot the data with the best fit
     plt.figure("Data and model")
-    plt.plot(center, hist, '.', label = "Data")
+    plt.stairs(hist, edges, color = 'C0', label = 'Data', linewidth = 1.5)
     plt.plot(xx, pdf, 'r', label = "Model")
     plt.plot(xx, w_normal_1, 'g', label = "Norm 1", alpha = 0.5)
     plt.plot(xx, w_normal_2, color = 'orange', label = "Norm 2", alpha = 0.5)
     plt.xlabel("$\\log(T_{90})$")
     plt.ylabel("Normalized Counts")
     plt.legend()
-    #plt.savefig(main_dir+"\\Results\\Data_and_model.png")
+    plt.savefig(main_dir+"\\Results\\Data_and_model.png", dpi = 600)
 
     # end of first point: show or close all the open figures
     # I have commented all the savefig

@@ -1,92 +1,167 @@
-2026-03-16, 18:08:14 - raynest.raynest.raynest               : Running with 4 parallel threads
-2026-03-16, 18:08:14 - raynest.raynest.raynest               : Nested samplers: 1
-2026-03-16, 18:08:14 - raynest.raynest.raynest               : Ensemble samplers: 3
-2026-03-16, 18:08:14 - raynest.raynest.raynest               : Slice samplers: 0
-2026-03-16, 18:08:14 - raynest.raynest.raynest               : Hamiltonian samplers: 0
-2026-03-16, 18:08:14 - raynest.raynest.raynest               : ray object store size: 1.0 GB
-2026-03-16, 18:08:15 - raynest.raynest.raynest               : seed = None was passed. The results will not be reproducible.                                      Set seed = int to have a reproducible sequence.
-2026-03-16, 18:11:23 - raynest.nest2pos                      : Computed log_evidences: (np.float64(5899.693655970187),)
-2026-03-16, 18:11:23 - raynest.nest2pos                      : Relative weights of input files: [np.float64(1.0)]
-2026-03-16, 18:11:23 - raynest.nest2pos                      : Relative weights of input files taking into account their length: [np.float64(1.0)]
-2026-03-16, 18:11:23 - raynest.nest2pos                      : Number of input samples: [21457]
-2026-03-16, 18:11:23 - raynest.nest2pos                      : Expected number of samples from each input file [4240]
-2026-03-16, 18:11:23 - raynest.nest2pos                      : Samples produced: 4240
-2026-03-16, 18:11:23 - raynest.nest2pos                      : Computed log_evidences: (np.float64(5899.693655970187),)
-2026-03-16, 18:11:23 - raynest.nest2pos                      : Relative weights of input files: [np.float64(1.0)]
-2026-03-16, 18:11:23 - raynest.nest2pos                      : Relative weights of input files taking into account their length: [np.float64(1.0)]
-2026-03-16, 18:11:23 - raynest.nest2pos                      : Number of input samples: [21457]
-2026-03-16, 18:11:23 - raynest.nest2pos                      : Expected number of samples from each input file [4248]
-2026-03-16, 18:11:23 - raynest.nest2pos                      : Samples produced: 4248
-2026-03-16, 18:11:23 - raynest.raynest.raynest               : Saving output in two_class_output/
-2026-03-16, 18:11:23 - raynest.raynest.raynest               : Saving plots in two_class_output/
-2026-03-16, 18:11:28 - raynest.raynest.raynest               : Removing checkpoint file two_class_output/checkpoints/nested_sampler_resume_0.pkl
-2026-03-16, 18:11:30 - raynest.raynest.raynest               : ray correctly shut down. exiting
-2026-03-16, 18:14:48 - raynest.raynest.raynest               : Running with 4 parallel threads
-2026-03-16, 18:14:48 - raynest.raynest.raynest               : Nested samplers: 1
-2026-03-16, 18:14:48 - raynest.raynest.raynest               : Ensemble samplers: 3
-2026-03-16, 18:14:48 - raynest.raynest.raynest               : Slice samplers: 0
-2026-03-16, 18:14:48 - raynest.raynest.raynest               : Hamiltonian samplers: 0
-2026-03-16, 18:14:48 - raynest.raynest.raynest               : ray object store size: 1.0 GB
-2026-03-16, 18:14:48 - raynest.raynest.raynest               : seed = None was passed. The results will not be reproducible.                                      Set seed = int to have a reproducible sequence.
-2026-03-16, 18:17:27 - raynest.nest2pos                      : Computed log_evidences: (np.float64(5899.861464618558),)
-2026-03-16, 18:17:27 - raynest.nest2pos                      : Relative weights of input files: [np.float64(1.0)]
-2026-03-16, 18:17:27 - raynest.nest2pos                      : Relative weights of input files taking into account their length: [np.float64(1.0)]
-2026-03-16, 18:17:27 - raynest.nest2pos                      : Number of input samples: [21295]
-2026-03-16, 18:17:27 - raynest.nest2pos                      : Expected number of samples from each input file [4036]
-2026-03-16, 18:17:27 - raynest.nest2pos                      : Samples produced: 4036
-2026-03-16, 18:17:27 - raynest.nest2pos                      : Computed log_evidences: (np.float64(5899.861464618558),)
-2026-03-16, 18:17:27 - raynest.nest2pos                      : Relative weights of input files: [np.float64(1.0)]
-2026-03-16, 18:17:27 - raynest.nest2pos                      : Relative weights of input files taking into account their length: [np.float64(1.0)]
-2026-03-16, 18:17:27 - raynest.nest2pos                      : Number of input samples: [21295]
-2026-03-16, 18:17:27 - raynest.nest2pos                      : Expected number of samples from each input file [4102]
-2026-03-16, 18:17:27 - raynest.nest2pos                      : Samples produced: 4102
-2026-03-16, 18:17:27 - raynest.raynest.raynest               : Saving output in two_class_output/
-2026-03-16, 18:17:27 - raynest.raynest.raynest               : Saving plots in two_class_output/
-2026-03-16, 18:17:33 - raynest.raynest.raynest               : Removing checkpoint file two_class_output/checkpoints/nested_sampler_resume_0.pkl
-2026-03-16, 18:17:34 - raynest.raynest.raynest               : ray correctly shut down. exiting
-2026-03-16, 18:25:36 - raynest.raynest.raynest               : Running with 4 parallel threads
-2026-03-16, 18:25:36 - raynest.raynest.raynest               : Nested samplers: 1
-2026-03-16, 18:25:36 - raynest.raynest.raynest               : Ensemble samplers: 3
-2026-03-16, 18:25:36 - raynest.raynest.raynest               : Slice samplers: 0
-2026-03-16, 18:25:36 - raynest.raynest.raynest               : Hamiltonian samplers: 0
-2026-03-16, 18:25:36 - raynest.raynest.raynest               : ray object store size: 1.0 GB
-2026-03-16, 18:25:36 - raynest.raynest.raynest               : seed = None was passed. The results will not be reproducible.                                      Set seed = int to have a reproducible sequence.
-2026-03-16, 18:28:13 - raynest.nest2pos                      : Computed log_evidences: (np.float64(5899.745492149093),)
-2026-03-16, 18:28:13 - raynest.nest2pos                      : Relative weights of input files: [np.float64(1.0)]
-2026-03-16, 18:28:13 - raynest.nest2pos                      : Relative weights of input files taking into account their length: [np.float64(1.0)]
-2026-03-16, 18:28:13 - raynest.nest2pos                      : Number of input samples: [21358]
-2026-03-16, 18:28:13 - raynest.nest2pos                      : Expected number of samples from each input file [4085]
-2026-03-16, 18:28:13 - raynest.nest2pos                      : Samples produced: 4085
-2026-03-16, 18:28:13 - raynest.nest2pos                      : Computed log_evidences: (np.float64(5899.745492149093),)
-2026-03-16, 18:28:13 - raynest.nest2pos                      : Relative weights of input files: [np.float64(1.0)]
-2026-03-16, 18:28:13 - raynest.nest2pos                      : Relative weights of input files taking into account their length: [np.float64(1.0)]
-2026-03-16, 18:28:13 - raynest.nest2pos                      : Number of input samples: [21358]
-2026-03-16, 18:28:13 - raynest.nest2pos                      : Expected number of samples from each input file [4153]
-2026-03-16, 18:28:13 - raynest.nest2pos                      : Samples produced: 4153
-2026-03-16, 18:28:13 - raynest.raynest.raynest               : Saving output in two_class_output/
-2026-03-16, 18:28:13 - raynest.raynest.raynest               : Saving plots in two_class_output/
-2026-03-16, 18:28:18 - raynest.raynest.raynest               : Removing checkpoint file two_class_output/checkpoints/nested_sampler_resume_0.pkl
-2026-03-16, 18:28:19 - raynest.raynest.raynest               : ray correctly shut down. exiting
-2026-03-17, 11:25:10 - raynest.raynest.raynest               : Running with 4 parallel threads
-2026-03-17, 11:25:10 - raynest.raynest.raynest               : Nested samplers: 1
-2026-03-17, 11:25:10 - raynest.raynest.raynest               : Ensemble samplers: 3
-2026-03-17, 11:25:10 - raynest.raynest.raynest               : Slice samplers: 0
-2026-03-17, 11:25:10 - raynest.raynest.raynest               : Hamiltonian samplers: 0
-2026-03-17, 11:25:10 - raynest.raynest.raynest               : ray object store size: 1.0 GB
-2026-03-17, 11:25:12 - raynest.raynest.raynest               : seed = None was passed. The results will not be reproducible.                                      Set seed = int to have a reproducible sequence.
-2026-03-17, 11:30:09 - raynest.nest2pos                      : Computed log_evidences: (np.float64(5899.780006503409),)
-2026-03-17, 11:30:09 - raynest.nest2pos                      : Relative weights of input files: [np.float64(1.0)]
-2026-03-17, 11:30:09 - raynest.nest2pos                      : Relative weights of input files taking into account their length: [np.float64(1.0)]
-2026-03-17, 11:30:09 - raynest.nest2pos                      : Number of input samples: [42734]
-2026-03-17, 11:30:09 - raynest.nest2pos                      : Expected number of samples from each input file [8190]
-2026-03-17, 11:30:09 - raynest.nest2pos                      : Samples produced: 8190
-2026-03-17, 11:30:09 - raynest.nest2pos                      : Computed log_evidences: (np.float64(5899.780006503409),)
-2026-03-17, 11:30:09 - raynest.nest2pos                      : Relative weights of input files: [np.float64(1.0)]
-2026-03-17, 11:30:09 - raynest.nest2pos                      : Relative weights of input files taking into account their length: [np.float64(1.0)]
-2026-03-17, 11:30:09 - raynest.nest2pos                      : Number of input samples: [42734]
-2026-03-17, 11:30:09 - raynest.nest2pos                      : Expected number of samples from each input file [8267]
-2026-03-17, 11:30:09 - raynest.nest2pos                      : Samples produced: 8267
-2026-03-17, 11:30:09 - raynest.raynest.raynest               : Saving output in two_class_output/
-2026-03-17, 11:30:09 - raynest.raynest.raynest               : Saving plots in two_class_output/
-2026-03-17, 11:30:16 - raynest.raynest.raynest               : Removing checkpoint file two_class_output/checkpoints/nested_sampler_resume_0.pkl
-2026-03-17, 11:30:17 - raynest.raynest.raynest               : ray correctly shut down. exiting
+2026-03-17, 14:32:58 - raynest.raynest.raynest               : Running with 4 parallel threads
+2026-03-17, 14:32:58 - raynest.raynest.raynest               : Nested samplers: 1
+2026-03-17, 14:32:58 - raynest.raynest.raynest               : Ensemble samplers: 3
+2026-03-17, 14:32:58 - raynest.raynest.raynest               : Slice samplers: 0
+2026-03-17, 14:32:58 - raynest.raynest.raynest               : Hamiltonian samplers: 0
+2026-03-17, 14:32:58 - raynest.raynest.raynest               : ray object store size: 1.0 GB
+2026-03-17, 14:32:59 - raynest.raynest.raynest               : seed = None was passed. The results will not be reproducible.                                      Set seed = int to have a reproducible sequence.
+2026-03-17, 14:41:19 - raynest.raynest.raynest               : Running with 4 parallel threads
+2026-03-17, 14:41:19 - raynest.raynest.raynest               : Nested samplers: 1
+2026-03-17, 14:41:19 - raynest.raynest.raynest               : Ensemble samplers: 3
+2026-03-17, 14:41:19 - raynest.raynest.raynest               : Slice samplers: 0
+2026-03-17, 14:41:19 - raynest.raynest.raynest               : Hamiltonian samplers: 0
+2026-03-17, 14:41:19 - raynest.raynest.raynest               : ray object store size: 1.0 GB
+2026-03-17, 14:41:30 - raynest.raynest.raynest               : seed = None was passed. The results will not be reproducible.                                      Set seed = int to have a reproducible sequence.
+2026-03-17, 14:51:50 - raynest.raynest.raynest               : Running with 4 parallel threads
+2026-03-17, 14:51:50 - raynest.raynest.raynest               : Nested samplers: 1
+2026-03-17, 14:51:50 - raynest.raynest.raynest               : Ensemble samplers: 3
+2026-03-17, 14:51:50 - raynest.raynest.raynest               : Slice samplers: 0
+2026-03-17, 14:51:50 - raynest.raynest.raynest               : Hamiltonian samplers: 0
+2026-03-17, 14:51:50 - raynest.raynest.raynest               : ray object store size: 1.0 GB
+2026-03-17, 14:51:53 - raynest.raynest.raynest               : seed = None was passed. The results will not be reproducible.                                      Set seed = int to have a reproducible sequence.
+2026-03-17, 14:53:54 - raynest.raynest.raynest               : Running with 4 parallel threads
+2026-03-17, 14:53:54 - raynest.raynest.raynest               : Nested samplers: 1
+2026-03-17, 14:53:54 - raynest.raynest.raynest               : Ensemble samplers: 3
+2026-03-17, 14:53:54 - raynest.raynest.raynest               : Slice samplers: 0
+2026-03-17, 14:53:54 - raynest.raynest.raynest               : Hamiltonian samplers: 0
+2026-03-17, 14:53:54 - raynest.raynest.raynest               : ray object store size: 1.0 GB
+2026-03-17, 14:53:54 - raynest.raynest.raynest               : seed = None was passed. The results will not be reproducible.                                      Set seed = int to have a reproducible sequence.
+2026-03-17, 14:55:45 - raynest.raynest.raynest               : Running with 4 parallel threads
+2026-03-17, 14:55:45 - raynest.raynest.raynest               : Nested samplers: 1
+2026-03-17, 14:55:45 - raynest.raynest.raynest               : Ensemble samplers: 3
+2026-03-17, 14:55:45 - raynest.raynest.raynest               : Slice samplers: 0
+2026-03-17, 14:55:45 - raynest.raynest.raynest               : Hamiltonian samplers: 0
+2026-03-17, 14:55:45 - raynest.raynest.raynest               : ray object store size: 1.0 GB
+2026-03-17, 14:55:45 - raynest.raynest.raynest               : seed = None was passed. The results will not be reproducible.                                      Set seed = int to have a reproducible sequence.
+2026-03-17, 15:09:40 - raynest.raynest.raynest               : Running with 4 parallel threads
+2026-03-17, 15:09:40 - raynest.raynest.raynest               : Nested samplers: 1
+2026-03-17, 15:09:40 - raynest.raynest.raynest               : Ensemble samplers: 3
+2026-03-17, 15:09:40 - raynest.raynest.raynest               : Slice samplers: 0
+2026-03-17, 15:09:40 - raynest.raynest.raynest               : Hamiltonian samplers: 0
+2026-03-17, 15:09:40 - raynest.raynest.raynest               : ray object store size: 1.0 GB
+2026-03-17, 15:09:40 - raynest.raynest.raynest               : seed = None was passed. The results will not be reproducible.                                      Set seed = int to have a reproducible sequence.
+2026-03-17, 15:17:22 - raynest.raynest.raynest               : Running with 4 parallel threads
+2026-03-17, 15:17:22 - raynest.raynest.raynest               : Nested samplers: 1
+2026-03-17, 15:17:22 - raynest.raynest.raynest               : Ensemble samplers: 3
+2026-03-17, 15:17:22 - raynest.raynest.raynest               : Slice samplers: 0
+2026-03-17, 15:17:22 - raynest.raynest.raynest               : Hamiltonian samplers: 0
+2026-03-17, 15:17:22 - raynest.raynest.raynest               : ray object store size: 1.0 GB
+2026-03-17, 15:17:23 - raynest.raynest.raynest               : seed = None was passed. The results will not be reproducible.                                      Set seed = int to have a reproducible sequence.
+2026-03-17, 15:20:28 - raynest.raynest.raynest               : Running with 4 parallel threads
+2026-03-17, 15:20:28 - raynest.raynest.raynest               : Nested samplers: 1
+2026-03-17, 15:20:28 - raynest.raynest.raynest               : Ensemble samplers: 3
+2026-03-17, 15:20:28 - raynest.raynest.raynest               : Slice samplers: 0
+2026-03-17, 15:20:28 - raynest.raynest.raynest               : Hamiltonian samplers: 0
+2026-03-17, 15:20:28 - raynest.raynest.raynest               : ray object store size: 1.0 GB
+2026-03-17, 15:20:28 - raynest.raynest.raynest               : seed = None was passed. The results will not be reproducible.                                      Set seed = int to have a reproducible sequence.
+2026-03-17, 15:24:54 - raynest.raynest.raynest               : Running with 4 parallel threads
+2026-03-17, 15:24:54 - raynest.raynest.raynest               : Nested samplers: 1
+2026-03-17, 15:24:54 - raynest.raynest.raynest               : Ensemble samplers: 3
+2026-03-17, 15:24:54 - raynest.raynest.raynest               : Slice samplers: 0
+2026-03-17, 15:24:54 - raynest.raynest.raynest               : Hamiltonian samplers: 0
+2026-03-17, 15:24:54 - raynest.raynest.raynest               : ray object store size: 1.0 GB
+2026-03-17, 15:24:55 - raynest.raynest.raynest               : seed = None was passed. The results will not be reproducible.                                      Set seed = int to have a reproducible sequence.
+2026-03-17, 15:25:31 - raynest.raynest.raynest               : Running with 4 parallel threads
+2026-03-17, 15:25:31 - raynest.raynest.raynest               : Nested samplers: 1
+2026-03-17, 15:25:31 - raynest.raynest.raynest               : Ensemble samplers: 3
+2026-03-17, 15:25:31 - raynest.raynest.raynest               : Slice samplers: 0
+2026-03-17, 15:25:31 - raynest.raynest.raynest               : Hamiltonian samplers: 0
+2026-03-17, 15:25:31 - raynest.raynest.raynest               : ray object store size: 1.0 GB
+2026-03-17, 15:25:31 - raynest.raynest.raynest               : seed = None was passed. The results will not be reproducible.                                      Set seed = int to have a reproducible sequence.
+2026-03-17, 15:38:49 - raynest.raynest.raynest               : Running with 4 parallel threads
+2026-03-17, 15:38:49 - raynest.raynest.raynest               : Nested samplers: 1
+2026-03-17, 15:38:49 - raynest.raynest.raynest               : Ensemble samplers: 3
+2026-03-17, 15:38:49 - raynest.raynest.raynest               : Slice samplers: 0
+2026-03-17, 15:38:49 - raynest.raynest.raynest               : Hamiltonian samplers: 0
+2026-03-17, 15:38:49 - raynest.raynest.raynest               : ray object store size: 1.0 GB
+2026-03-17, 15:38:50 - raynest.raynest.raynest               : seed = None was passed. The results will not be reproducible.                                      Set seed = int to have a reproducible sequence.
+2026-03-17, 15:41:02 - raynest.raynest.raynest               : Running with 4 parallel threads
+2026-03-17, 15:41:02 - raynest.raynest.raynest               : Nested samplers: 1
+2026-03-17, 15:41:02 - raynest.raynest.raynest               : Ensemble samplers: 3
+2026-03-17, 15:41:02 - raynest.raynest.raynest               : Slice samplers: 0
+2026-03-17, 15:41:02 - raynest.raynest.raynest               : Hamiltonian samplers: 0
+2026-03-17, 15:41:02 - raynest.raynest.raynest               : ray object store size: 1.0 GB
+2026-03-17, 15:41:03 - raynest.raynest.raynest               : seed = None was passed. The results will not be reproducible.                                      Set seed = int to have a reproducible sequence.
+2026-03-17, 16:09:07 - raynest.raynest.raynest               : Running with 4 parallel threads
+2026-03-17, 16:09:07 - raynest.raynest.raynest               : Nested samplers: 1
+2026-03-17, 16:09:07 - raynest.raynest.raynest               : Ensemble samplers: 3
+2026-03-17, 16:09:07 - raynest.raynest.raynest               : Slice samplers: 0
+2026-03-17, 16:09:07 - raynest.raynest.raynest               : Hamiltonian samplers: 0
+2026-03-17, 16:09:07 - raynest.raynest.raynest               : ray object store size: 1.0 GB
+2026-03-17, 16:09:08 - raynest.raynest.raynest               : seed = None was passed. The results will not be reproducible.                                      Set seed = int to have a reproducible sequence.
+2026-03-17, 16:14:03 - raynest.raynest.raynest               : Running with 4 parallel threads
+2026-03-17, 16:14:03 - raynest.raynest.raynest               : Nested samplers: 1
+2026-03-17, 16:14:03 - raynest.raynest.raynest               : Ensemble samplers: 3
+2026-03-17, 16:14:03 - raynest.raynest.raynest               : Slice samplers: 0
+2026-03-17, 16:14:03 - raynest.raynest.raynest               : Hamiltonian samplers: 0
+2026-03-17, 16:14:03 - raynest.raynest.raynest               : ray object store size: 1.0 GB
+2026-03-17, 16:14:04 - raynest.raynest.raynest               : seed = None was passed. The results will not be reproducible.                                      Set seed = int to have a reproducible sequence.
+2026-03-17, 16:21:26 - raynest.raynest.raynest               : Running with 4 parallel threads
+2026-03-17, 16:21:26 - raynest.raynest.raynest               : Nested samplers: 1
+2026-03-17, 16:21:26 - raynest.raynest.raynest               : Ensemble samplers: 3
+2026-03-17, 16:21:26 - raynest.raynest.raynest               : Slice samplers: 0
+2026-03-17, 16:21:26 - raynest.raynest.raynest               : Hamiltonian samplers: 0
+2026-03-17, 16:21:26 - raynest.raynest.raynest               : ray object store size: 1.0 GB
+2026-03-17, 16:21:27 - raynest.raynest.raynest               : seed = None was passed. The results will not be reproducible.                                      Set seed = int to have a reproducible sequence.
+2026-03-17, 16:27:11 - raynest.nest2pos                      : Computed log_evidences: (np.float64(5899.1333313029145),)
+2026-03-17, 16:27:11 - raynest.nest2pos                      : Relative weights of input files: [np.float64(1.0)]
+2026-03-17, 16:27:11 - raynest.nest2pos                      : Relative weights of input files taking into account their length: [np.float64(1.0)]
+2026-03-17, 16:27:11 - raynest.nest2pos                      : Number of input samples: [44072]
+2026-03-17, 16:27:11 - raynest.nest2pos                      : Expected number of samples from each input file [8206]
+2026-03-17, 16:27:11 - raynest.nest2pos                      : Samples produced: 8206
+2026-03-17, 16:27:11 - raynest.nest2pos                      : Computed log_evidences: (np.float64(5899.1333313029145),)
+2026-03-17, 16:27:11 - raynest.nest2pos                      : Relative weights of input files: [np.float64(1.0)]
+2026-03-17, 16:27:11 - raynest.nest2pos                      : Relative weights of input files taking into account their length: [np.float64(1.0)]
+2026-03-17, 16:27:11 - raynest.nest2pos                      : Number of input samples: [44072]
+2026-03-17, 16:27:11 - raynest.nest2pos                      : Expected number of samples from each input file [8245]
+2026-03-17, 16:27:11 - raynest.nest2pos                      : Samples produced: 8245
+2026-03-17, 16:27:11 - raynest.raynest.raynest               : Saving output in two_class_output/
+2026-03-17, 16:27:12 - raynest.raynest.raynest               : Saving plots in two_class_output/
+2026-03-17, 16:27:19 - raynest.raynest.raynest               : Removing checkpoint file two_class_output/checkpoints/nested_sampler_resume_0.pkl
+2026-03-17, 16:27:20 - raynest.raynest.raynest               : ray correctly shut down. exiting
+2026-03-17, 18:28:39 - raynest.raynest.raynest               : Running with 7 parallel threads
+2026-03-17, 18:28:39 - raynest.raynest.raynest               : Nested samplers: 1
+2026-03-17, 18:28:39 - raynest.raynest.raynest               : Ensemble samplers: 6
+2026-03-17, 18:28:39 - raynest.raynest.raynest               : Slice samplers: 0
+2026-03-17, 18:28:39 - raynest.raynest.raynest               : Hamiltonian samplers: 0
+2026-03-17, 18:28:39 - raynest.raynest.raynest               : ray object store size: 1.0 GB
+2026-03-17, 18:28:39 - raynest.raynest.raynest               : seed = None was passed. The results will not be reproducible.                                      Set seed = int to have a reproducible sequence.
+2026-03-17, 18:32:51 - raynest.nest2pos                      : Computed log_evidences: (np.float64(5900.034279659656),)
+2026-03-17, 18:32:51 - raynest.nest2pos                      : Relative weights of input files: [np.float64(1.0)]
+2026-03-17, 18:32:51 - raynest.nest2pos                      : Relative weights of input files taking into account their length: [np.float64(1.0)]
+2026-03-17, 18:32:51 - raynest.nest2pos                      : Number of input samples: [42278]
+2026-03-17, 18:32:51 - raynest.nest2pos                      : Expected number of samples from each input file [8323]
+2026-03-17, 18:32:51 - raynest.nest2pos                      : Samples produced: 8323
+2026-03-17, 18:32:51 - raynest.nest2pos                      : Computed log_evidences: (np.float64(5900.034279659656),)
+2026-03-17, 18:32:51 - raynest.nest2pos                      : Relative weights of input files: [np.float64(1.0)]
+2026-03-17, 18:32:51 - raynest.nest2pos                      : Relative weights of input files taking into account their length: [np.float64(1.0)]
+2026-03-17, 18:32:51 - raynest.nest2pos                      : Number of input samples: [42278]
+2026-03-17, 18:32:51 - raynest.nest2pos                      : Expected number of samples from each input file [8282]
+2026-03-17, 18:32:51 - raynest.nest2pos                      : Samples produced: 8282
+2026-03-17, 18:32:51 - raynest.raynest.raynest               : Saving output in two_class_output/
+2026-03-17, 18:32:51 - raynest.raynest.raynest               : Saving plots in two_class_output/
+2026-03-17, 18:32:58 - raynest.raynest.raynest               : Removing checkpoint file two_class_output/checkpoints/nested_sampler_resume_0.pkl
+2026-03-17, 18:33:00 - raynest.raynest.raynest               : ray correctly shut down. exiting
+2026-03-17, 18:38:21 - raynest.raynest.raynest               : Running with 7 parallel threads
+2026-03-17, 18:38:21 - raynest.raynest.raynest               : Nested samplers: 1
+2026-03-17, 18:38:21 - raynest.raynest.raynest               : Ensemble samplers: 6
+2026-03-17, 18:38:21 - raynest.raynest.raynest               : Slice samplers: 0
+2026-03-17, 18:38:21 - raynest.raynest.raynest               : Hamiltonian samplers: 0
+2026-03-17, 18:38:21 - raynest.raynest.raynest               : ray object store size: 1.0 GB
+2026-03-17, 18:38:21 - raynest.raynest.raynest               : seed = None was passed. The results will not be reproducible.                                      Set seed = int to have a reproducible sequence.
+2026-03-17, 18:44:22 - raynest.nest2pos                      : Computed log_evidences: (np.float64(5899.845590727074),)
+2026-03-17, 18:44:22 - raynest.nest2pos                      : Relative weights of input files: [np.float64(1.0)]
+2026-03-17, 18:44:22 - raynest.nest2pos                      : Relative weights of input files taking into account their length: [np.float64(1.0)]
+2026-03-17, 18:44:22 - raynest.nest2pos                      : Number of input samples: [42578]
+2026-03-17, 18:44:22 - raynest.nest2pos                      : Expected number of samples from each input file [8301]
+2026-03-17, 18:44:22 - raynest.nest2pos                      : Samples produced: 8301
+2026-03-17, 18:44:22 - raynest.nest2pos                      : Computed log_evidences: (np.float64(5899.845590727074),)
+2026-03-17, 18:44:22 - raynest.nest2pos                      : Relative weights of input files: [np.float64(1.0)]
+2026-03-17, 18:44:22 - raynest.nest2pos                      : Relative weights of input files taking into account their length: [np.float64(1.0)]
+2026-03-17, 18:44:22 - raynest.nest2pos                      : Number of input samples: [42578]
+2026-03-17, 18:44:22 - raynest.nest2pos                      : Expected number of samples from each input file [8317]
+2026-03-17, 18:44:22 - raynest.nest2pos                      : Samples produced: 8317
+2026-03-17, 18:44:22 - raynest.raynest.raynest               : Saving output in two_class_output/
+2026-03-17, 18:44:22 - raynest.raynest.raynest               : Saving plots in two_class_output/
+2026-03-17, 18:44:33 - raynest.raynest.raynest               : Removing checkpoint file two_class_output/checkpoints/nested_sampler_resume_0.pkl
+2026-03-17, 18:44:35 - raynest.raynest.raynest               : ray correctly shut down. exiting

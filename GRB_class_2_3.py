@@ -112,5 +112,6 @@ if __name__ == "__main__":
     plt.ylabel("Probability")
     plt.grid(linestyle = 'dashed')
     plt.legend()
-    plt.savefig(main_dir+"\\Results\\Porb_of_class.png")
+    plt.savefig(main_dir+"\\Results\\Prob_of_class.png")
+    
     plt.show()
