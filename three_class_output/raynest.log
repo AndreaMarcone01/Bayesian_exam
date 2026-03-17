@@ -79,3 +79,26 @@
 2026-03-16, 19:05:09 - raynest.raynest.raynest               : Saving plots in three_class_output/
 2026-03-16, 19:05:16 - raynest.raynest.raynest               : Removing checkpoint file three_class_output/checkpoints/nested_sampler_resume_0.pkl
 2026-03-16, 19:05:19 - raynest.raynest.raynest               : ray correctly shut down. exiting
+2026-03-17, 11:30:20 - raynest.raynest.raynest               : Running with 4 parallel threads
+2026-03-17, 11:30:20 - raynest.raynest.raynest               : Nested samplers: 1
+2026-03-17, 11:30:20 - raynest.raynest.raynest               : Ensemble samplers: 3
+2026-03-17, 11:30:20 - raynest.raynest.raynest               : Slice samplers: 0
+2026-03-17, 11:30:20 - raynest.raynest.raynest               : Hamiltonian samplers: 0
+2026-03-17, 11:30:20 - raynest.raynest.raynest               : ray object store size: 1.0 GB
+2026-03-17, 11:30:20 - raynest.raynest.raynest               : seed = None was passed. The results will not be reproducible.                                      Set seed = int to have a reproducible sequence.
+2026-03-17, 11:54:05 - raynest.nest2pos                      : Computed log_evidences: (np.float64(5900.739056956969),)
+2026-03-17, 11:54:05 - raynest.nest2pos                      : Relative weights of input files: [np.float64(1.0)]
+2026-03-17, 11:54:05 - raynest.nest2pos                      : Relative weights of input files taking into account their length: [np.float64(1.0)]
+2026-03-17, 11:54:05 - raynest.nest2pos                      : Number of input samples: [49667]
+2026-03-17, 11:54:05 - raynest.nest2pos                      : Expected number of samples from each input file [11614]
+2026-03-17, 11:54:05 - raynest.nest2pos                      : Samples produced: 11614
+2026-03-17, 11:54:05 - raynest.nest2pos                      : Computed log_evidences: (np.float64(5900.739056956969),)
+2026-03-17, 11:54:05 - raynest.nest2pos                      : Relative weights of input files: [np.float64(1.0)]
+2026-03-17, 11:54:05 - raynest.nest2pos                      : Relative weights of input files taking into account their length: [np.float64(1.0)]
+2026-03-17, 11:54:05 - raynest.nest2pos                      : Number of input samples: [49667]
+2026-03-17, 11:54:05 - raynest.nest2pos                      : Expected number of samples from each input file [11570]
+2026-03-17, 11:54:05 - raynest.nest2pos                      : Samples produced: 11570
+2026-03-17, 11:54:05 - raynest.raynest.raynest               : Saving output in three_class_output/
+2026-03-17, 11:54:05 - raynest.raynest.raynest               : Saving plots in three_class_output/
+2026-03-17, 11:54:15 - raynest.raynest.raynest               : Removing checkpoint file three_class_output/checkpoints/nested_sampler_resume_0.pkl
+2026-03-17, 11:54:18 - raynest.raynest.raynest               : ray correctly shut down. exiting

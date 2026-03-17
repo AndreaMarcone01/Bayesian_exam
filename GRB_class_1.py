@@ -39,25 +39,27 @@ def weighted_log_normal(x, theta):
     return model
 
 def log_prior(theta, bounds):
-    """Uniform prior inside the bounds
+    """Prior for the problem inside the bounds. Uniform for w, mu_1, mu_2, Jeffrey prior for sigma_1 and sigma_2
     
     Args:
         theta (array): parameters on which calculate the posterior [w, mu1, sigma1, mu2, sigma2]
         bounds (array): bound for each parameter, expected as [min, max]
         
     Returns:
-        prior (float): uniform prior
+        prior (float): prior for the sey theta 
     """
     
     prior = np.zeros(theta.shape[0])
 
     for i in range(theta.shape[0]):
+        if i == 2 or i == 4:                    # Jeffrey prior on the sigmas
+            prior[i] = - np.log(theta[i])
         if theta[i] < bounds[i][0] or theta[i] > bounds[i][1]:
             prior[i] = - np.inf
     
     # check if mu_1 < mu_2. System of penalty for mu_1 near mu_2?
-    #if theta[1] > theta[3]:
-    #    prior[1] = - np.inf
+    if theta[1] > theta[3]:
+        prior[1] = - np.inf
     
     prior = np.sum(prior)
     return prior
@@ -346,7 +348,16 @@ if __name__ == "__main__":
         ax = fig.add_subplot(5, 1, i+1)
         counts_i, bins_i = np.histogram(parameters[:,i], bins = 30, density=True)
         ax.stairs(counts_i, bins_i, color = 'C0', label = 'Posterior samples', linewidth = 1.5)
-        ax.axhline(1/(bounds[i][1] - bounds[i][0]), color = 'r', label = "Prior", linestyle='dashed')
+        
+        # plot the priors, Jeffrey for sigmas and uniform for others
+        if i == 2 or i == 4:
+            a = 1e-8
+            b = bounds[i][1]
+            ss = np.linspace(a, b, 100)
+            ax.plot(ss, 1/(np.log(b/a) * ss), color = 'r', label = "Prior", linestyle='dashed')
+        else:
+            ax.axhline(1/(bounds[i][1] - bounds[i][0]), color = 'r', label = "Prior", linestyle='dashed')
+
         ax.axvline(par_val[i], color = 'green', label = "Peak value", linestyle='dashed')
         ax.axvline(par_val[i]+d_par_plus[i], color = 'orange', linestyle='dashed')
         ax.axvline(par_val[i]-d_par_minus[i], color = 'orange', label = "Peak value $\\pm\\sigma$", linestyle='dashed')
@@ -373,5 +384,5 @@ if __name__ == "__main__":
 
     # end of first point: show or close all the open figures
     # I have commented all the savefig
-    # plt.show()
-    plt.close('all')
+    #plt.show()
+    #plt.close('all')
