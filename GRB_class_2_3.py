@@ -42,42 +42,42 @@ def weighted_log_normal(x, theta):
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
+    from scipy.interpolate import interp1d
     import os
 
-    rng = np.random.default_rng(111) # initialize seed for reproducibility
+    rng = np.random.default_rng(1313) # initialize seed for reproducibility
 
     main_dir = os.path.dirname(os.path.realpath(__file__))
 
     # import results of the first point
     xx = np.linspace(-4,7,256)
     par_val, d_par_plus, d_par_minus = np.loadtxt(main_dir+"\\Results\\parameters_values.txt", unpack = True)
+    pdf, w_normal_1, w_normal_2 = np.loadtxt(main_dir+"\\Results\\model_values.txt", unpack = True)
 
-    pdf = weighted_log_normal(xx, par_val)
-    w_normal_1 = par_val[0] * gauss(xx, par_val[1], par_val[2])
-    w_normal_2 = (1-par_val[0]) * gauss(xx, par_val[3], par_val[4])
 
     # Second point of the exercise: classifying a GRB
     log_T = np.log(2.0)
 
-    w = par_val[0]
-    normal_1_at_T = gauss(log_T, par_val[1], par_val[2])
-    normal_2_at_T = gauss(log_T, par_val[3], par_val[4])
-    pdf_at_T = weighted_log_normal(log_T, par_val)
+    w_normal_1_at_T = interp1d(xx, w_normal_1)(log_T)
+    w_normal_2_at_T = interp1d(xx, w_normal_2)(log_T)
+    pdf_at_T = interp1d(xx, pdf)(log_T)
     
-    prob_short_at_T = w * normal_1_at_T/pdf_at_T
-    prob_long_at_T = (1-w) * normal_2_at_T/pdf_at_T
+    prob_short_at_T = w_normal_1_at_T/pdf_at_T
+    prob_long_at_T = w_normal_2_at_T/pdf_at_T
     print(f"Probability that is short: {prob_short_at_T:.3f}")
     print(f"Probability that is long: {prob_long_at_T:.3f}")
     print(f"Probability that is long or short: {prob_short_at_T+prob_long_at_T}")
 
     plt.figure("Model with GRB to classifying")
-    plt.plot(xx, pdf, 'C0', label = "Model")
-    plt.axvline(log_T, color = 'r', label = "GRB170817A", linestyle = 'dashed')
+    plt.plot(xx, pdf, 'r', label = "Model")
+    plt.axvline(log_T, color = 'k', label = "GRB170817A", linestyle = 'dashed')
     plt.plot(xx, w_normal_1, 'g', label = "Norm 1", alpha = 0.5)
     plt.plot(xx, w_normal_2, color = 'orange', label = "Norm 2", alpha = 0.5)
     plt.xlabel("$\\log(T_{90})$")
     plt.ylabel("Normalized Counts")
+    plt.ylim(bottom=0)
     plt.legend()
+    plt.grid(linestyle = 'dashed')
     plt.savefig(main_dir+"\\Results\\GRB_to_class.png")
 
     # Point 3: decide a figure of merit for the transition between long and short GRBs

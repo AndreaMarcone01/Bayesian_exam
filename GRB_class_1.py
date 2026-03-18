@@ -62,12 +62,12 @@ def log_prior(theta, bounds):
     if theta[1] > theta[3]:
         return - np.inf
     
-    """# Jeffrey prior on the sigmas
+    # Jeffrey prior on the sigmas
     for i in [2,4]:
             if theta[i] <= 0:           # this should be removed by the bounds but better safe than sorry
                 return -np.inf
             else:
-                prior += - np.log(theta[i])"""
+                prior += - np.log(theta[i])
     
     return prior
 
@@ -209,7 +209,7 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     import os
 
-    rng = np.random.default_rng(111) # initialize seed for reproducibility
+    rng = np.random.default_rng(1313) # initialize seed for reproducibility
 
     main_dir = os.path.dirname(os.path.realpath(__file__))
     log_T90, d_log_T90, Hardness_R = np.loadtxt(main_dir+"\\Data\\GRB_data.txt", unpack=True)
@@ -234,7 +234,7 @@ if __name__ == "__main__":
                         rng.uniform(0.01,3)])
     theta_fit = np.array([0.4, -0.5, 1.5, 3.6, 0.8])
     
-    xx = np.linspace(-4,7,100)
+    xx = np.linspace(-4,7,256)
     pdf = weighted_log_normal(xx, theta_0)
     pdf_f = weighted_log_normal(xx, theta_fit)
 
@@ -359,38 +359,46 @@ if __name__ == "__main__":
         ax = fig.add_subplot(5, 1, i+1)
         counts_i, bins_i = np.histogram(parameters[:,i], bins = 30, density=True)
         ax.stairs(counts_i, bins_i, color = 'C0', label = 'Posterior samples', linewidth = 1.5)
-        
         # plot the priors, Jeffrey for sigmas and uniform for others
-        """if i == 2 or i == 4:
+        if i == 2 or i == 4:
             a = bounds[i][0]
             b = bounds[i][1]
             ss = np.linspace(a, b, 100)
             ax.plot(ss, 1/(np.log(b/a) * ss), color = 'r', label = "Prior", linestyle='dashed')
-        else:"""
-        ax.axhline(1/(bounds[i][1] - bounds[i][0]), color = 'r', label = "Prior", linestyle='dashed')
+        else:
+            ax.axhline(1/(bounds[i][1] - bounds[i][0]), color = 'r', label = "Prior", linestyle='dashed')
 
         ax.axvline(par_val[i], color = 'green', label = "Peak value", linestyle='dashed')
         ax.axvline(par_val[i]+d_par_plus[i], color = 'orange', linestyle='dashed')
         ax.axvline(par_val[i]-d_par_minus[i], color = 'orange', label = "Peak value $\\pm\\sigma$", linestyle='dashed')
         ax.set_xlabel(par_name[i])
+        delta = 2*np.diff(bins_i)[0]
+        ax.set_xlim(np.min(bins_i)-delta, np.max(bins_i)+delta)
         ax.set_ylim(0, np.max(counts_i) * 1.1)
     plt.tight_layout()
     plt.savefig(main_dir+"\\Results\\Parameters_hist.png", dpi = 600)
 
     
-    pdf = weighted_log_normal(xx, par_val)
-    w_normal_1 = par_val[0] * gauss(xx, par_val[1], par_val[2])
-    w_normal_2 = (1-par_val[0]) * gauss(xx, par_val[3], par_val[4])
+    posterior_models = [weighted_log_normal(xx, s) for s in parameters]
+    l, pdf, h = np.percentile(posterior_models,[16,50,84],axis=0)
+    w_normal_1 = np.percentile([s[0] * gauss(xx, s[1], s[2]) for s in parameters], 50, axis=0)
+    w_normal_2 = np.percentile([(1-s[0]) * gauss(xx, s[3], s[4]) for s in parameters], 50, axis=0)
+
+    header = "model w_normal_1 w_normal_2"
+    np.savetxt(main_dir+"\\Results\\model_values.txt", np.array([pdf, w_normal_1, w_normal_2]).T, header=header)
+
 
     # plot the data with the best fit
     plt.figure("Data and model")
-    plt.stairs(hist, edges, color = 'C0', label = 'Data', linewidth = 1.5)
+    plt.stairs(hist, edges, color = 'C0', label = 'Data')
     plt.plot(xx, pdf, 'r', label = "Model")
+    plt.fill_between(xx, h, l, facecolor='tomato', alpha = 0.5)
     plt.plot(xx, w_normal_1, 'g', label = "Norm 1", alpha = 0.5)
     plt.plot(xx, w_normal_2, color = 'orange', label = "Norm 2", alpha = 0.5)
     plt.xlabel("$\\log(T_{90})$")
     plt.ylabel("Normalized Counts")
     plt.legend()
+    plt.grid(linestyle = 'dashed')
     plt.savefig(main_dir+"\\Results\\Data_and_model.png", dpi = 600)
 
     # end of first point: show or close all the open figures
