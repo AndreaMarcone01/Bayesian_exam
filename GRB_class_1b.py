@@ -89,7 +89,7 @@ def log_likelihood(theta, counts, center, model):
     expected_count = N * model(center, theta) * dx
 
     if np.any((expected_count == 0) & (counts > 0)):       # if expected == 0 we have a nan problem, but if also counts == 0 it's right
-            return -np.inf                                          # in the case that the model sees 0 counts but in realty there are return -inf
+            return -np.inf                                 # in the case that the model sees 0 counts but in realty there are return -inf
         
     log_like = xlogy(counts, expected_count) - expected_count
     return np.sum(log_like)
@@ -126,7 +126,7 @@ def proposed_distribution(x, bounds, rng, blind = True):
 
     d = x.shape[0]
     if blind == False:
-        fname = main_dir+"\\samples_covariance.txt"
+        fname = main_dir+"\\unc_samples_covariance.txt"
         if os.path.isfile(fname) == True: 
             covariance = np.loadtxt(fname)
         else:
@@ -236,36 +236,34 @@ if __name__ == "__main__":
     
     xx = np.linspace(-4,7,256)
     dx = np.diff(xx)[0]
+
+    # build data with uncertanties
     data = np.zeros(len(xx))
     for i in range(len(log_T90)):
-        data += gauss(xx, log_T90[i], d_log_T90[i])
+        data = data + gauss(xx, log_T90[i], d_log_T90[i]) * dx
 
-    print(np.sum(counts))
-    print(np.sum(data)/np.sum(counts) / dx)
-    data_n = data/(np.sum(data) * dx)
+    data_n = data/(np.sum(data) * dx)               # normalize to have area 1 (for plots)
     
     # plot the data
     plt.figure("Data and model")
-    plt.plot(xx, data, 'r', label = "Data with uncertanties")
-    plt.stairs(counts, edges, color = 'C0', label = 'Data')
+    plt.plot(xx, data_n, 'r', label = "Data with uncertanties")
+    plt.stairs(hist, edges, color = 'C0', label = 'Data')
     plt.xlabel("$\\log(T_{90})$")
     plt.ylabel("Normalized Counts")
     plt.legend()
-    #plt.show()
-    exit()
-
+    
     # try to initialise things
         
     run = False
     prep_run = True
 
     if run == True:
-        samples, logP = metropolis_hastings(theta_0, log_posterior, counts, center, 
+        samples, logP = metropolis_hastings(theta_0, log_posterior, data, xx, 
                                             weighted_log_normal, bounds, rng, blind = True)
         
         # use this first estimate to adjust the proposal
         covariance = np.cov(samples.T)
-        np.savetxt(main_dir+"\\samples_covariance.txt", covariance)
+        np.savetxt(main_dir+"\\unc_samples_covariance.txt", covariance)
 
         if prep_run == True:
             # re-run chain with new covariance in proposal
@@ -274,12 +272,12 @@ if __name__ == "__main__":
         
         # save the chain
         header = "w , mu_1, sigma_1, mu_2, sigma_2"
-        np.savetxt(main_dir+"\\samples_chain.txt", samples, header=header)
-        np.savetxt(main_dir+"\\samples_posterior.txt", logP, header="log posterior")
+        np.savetxt(main_dir+"\\unc_samples_chain.txt", samples, header=header)
+        np.savetxt(main_dir+"\\unc_samples_posterior.txt", logP, header="log posterior")
 
     else: 
-        samples = np.loadtxt(main_dir+"\\samples_chain.txt")
-        logP = np.loadtxt(main_dir+"\\samples_posterior.txt")
+        samples = np.loadtxt(main_dir+"\\unc_samples_chain.txt")
+        logP = np.loadtxt(main_dir+"\\unc_samples_posterior.txt")
         
 
     # Look at the results
@@ -291,7 +289,7 @@ if __name__ == "__main__":
         ax.set_ylabel(par_name[i])
     ax.set_xlabel("Iteration")
     plt.tight_layout()
-    plt.savefig(main_dir+"\\Results\\Parameters_chain.png", dpi = 600)
+    plt.savefig(main_dir+"\\Results\\1b\\Parameters_chain.png", dpi = 600)
 
     burnin = 250 
     fig = plt.figure("Parameters chain: zoom to burn-in", figsize = (6,6))
@@ -304,7 +302,7 @@ if __name__ == "__main__":
         ax.set_ylabel(par_name[i])
     ax.set_xlabel("Iteration")
     plt.tight_layout()
-    plt.savefig(main_dir+"\\Results\\Parameters_chain_zoom.png", dpi = 600)
+    plt.savefig(main_dir+"\\Results\\1b\\Parameters_chain_zoom.png", dpi = 600)
 
     """
     fig = plt.figure("Chain posterior")
@@ -326,9 +324,9 @@ if __name__ == "__main__":
         ax.set_ylabel(par_name[i])
     ax.set_xlabel("Iteration")
     plt.tight_layout()
-    plt.savefig(main_dir+"\\Results\\Parameters_autocorr.png", dpi = 600)
+    plt.savefig(main_dir+"\\Results\\1b\\Parameters_autocorr.png", dpi = 600)
 
-    thinning = 100
+    thinning = 200
     fig = plt.figure("Parameters autocorrelation: zoom to thinning", figsize = (6,6))
     for i in range(samples.shape[1]):
         ax = fig.add_subplot(5, 1, i+1)
@@ -338,7 +336,7 @@ if __name__ == "__main__":
         ax.set_xlim(-50, 2 * thinning)
     ax.set_xlabel("Iteration")
     plt.tight_layout()
-    plt.savefig(main_dir+"\\Results\\Parameters_autocorr_zoom.png", dpi = 600)
+    plt.savefig(main_dir+"\\Results\\1b\\Parameters_autocorr_zoom.png", dpi = 600)
     
     # after burn-in and autocorrelation we plot the histograms of the parameters
     parameters = samples[burnin:,:]
@@ -356,7 +354,7 @@ if __name__ == "__main__":
         par_val[i], d_par_plus[i], d_par_minus[i] = errors_around_peak(center_i, counts_i)
 
     header = "par_val d_par_plus d_par_minus"
-    np.savetxt(main_dir+"\\Results\\parameters_values.txt", np.array([par_val, d_par_plus, d_par_minus]).T, header=header)
+    np.savetxt(main_dir+"\\Results\\1b\\parameters_values.txt", np.array([par_val, d_par_plus, d_par_minus]).T, header=header)
 
 
     fig = plt.figure("Parameters histogram", figsize = (6,6))
@@ -381,7 +379,7 @@ if __name__ == "__main__":
         ax.set_xlim(np.min(bins_i)-delta, np.max(bins_i)+delta)
         ax.set_ylim(0, np.max(counts_i) * 1.1)
     plt.tight_layout()
-    plt.savefig(main_dir+"\\Results\\Parameters_hist.png", dpi = 600)
+    plt.savefig(main_dir+"\\Results\\1b\\Parameters_hist.png", dpi = 600)
 
     
     posterior_models = [weighted_log_normal(xx, s) for s in parameters]
@@ -390,12 +388,12 @@ if __name__ == "__main__":
     w_normal_2 = np.percentile([(1-s[0]) * gauss(xx, s[3], s[4]) for s in parameters], 50, axis=0)
 
     header = "model w_normal_1 w_normal_2"
-    np.savetxt(main_dir+"\\Results\\model_values.txt", np.array([pdf, w_normal_1, w_normal_2]).T, header=header)
+    np.savetxt(main_dir+"\\Results\\1b\\model_values.txt", np.array([pdf, w_normal_1, w_normal_2]).T, header=header)
 
 
     # plot the data with the best fit
-    plt.figure("Data and model")
-    plt.stairs(hist, edges, color = 'C0', label = 'Data')
+    plt.figure("Data and result")
+    plt.plot(xx, data_n, color = 'C0', label = 'Data')
     plt.plot(xx, pdf, 'r', label = "Model")
     plt.fill_between(xx, h, l, facecolor='tomato', alpha = 0.5)
     plt.plot(xx, w_normal_1, 'g', label = "Norm 1", alpha = 0.5)
@@ -404,7 +402,7 @@ if __name__ == "__main__":
     plt.ylabel("Normalized Counts")
     plt.legend()
     plt.grid(linestyle = 'dashed')
-    plt.savefig(main_dir+"\\Results\\Data_and_model.png", dpi = 600)
+    plt.savefig(main_dir+"\\Results\\1b\\Data_and_model.png", dpi = 600)
 
     # end of first point: show or close all the open figures
     # I have commented all the savefig
