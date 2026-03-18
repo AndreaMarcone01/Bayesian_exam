@@ -36,16 +36,16 @@ def errors_around_peak(xx, pdf):
             - error_plus(float): positive error, defined as when the cdf hits 84% minus xx_peak
             - error_minus(float): negative error, defined as xx_peak minus when the cdf hits 26%
     """
-    perc = percentile(xx, pdf, [0.26,0.84])
+    perc = percentile(xx, pdf, [0.16,0.50, 0.84])
     xx_min = float(perc[0])
-    xx_max = float(perc[1])
+    xx_peak = float(perc[1])
+    xx_max = float(perc[2])
     
-    xx_peak = float(xx[pdf == np.max(pdf)])
     error_plus = xx_max - xx_peak
     error_minus = xx_peak - xx_min
 
     if error_minus < 0:
         error_minus = np.nan
-        print("Peak is before 26% of the distribution! Caution!")
+        print("Peak is before 16% of the distribution! Caution!")
 
     return xx_peak, error_plus, error_minus   
