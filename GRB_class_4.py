@@ -1,6 +1,7 @@
+# Python script to analyse the results of GRB_class_4_NS.py
+
 import numpy as np
 from scipy.special import xlogy
-import raynest.model
 
 def gauss(x, mu, sigma):
     """Log normal model.
@@ -65,64 +66,15 @@ def three_weighted_log_normal(x, theta):
     model = w_1 * normal_1 + w_2 * normal_2 + (1-w_1-w_2) * normal_3
     return model
 
-class FunctionalModel(raynest.model.Model):
-    def __init__(self, counts, center, model, bounds, names):
-        self.counts = counts        # counts in a bin
-        self.center = center        # centers of the bins
-        self.model  = model         # model to evaluate
-        self.bounds = bounds        # bounds on the parameters
-        self.names  = names
-        self.N      = np.sum(counts)
-        self.dx     = np.diff(center)[0]
-
-    def log_prior(self, p):
-        # p stands for live point so it's the array of parameters
-        
-        # check the bounds
-        for i in range(p.shape[0]):
-            if p[i] < self.bounds[i][0] or p[i] > self.bounds[i][1]:
-                return -np.inf
-            
-        # in the three normal case constrain w_1+w_2<1
-        if p.shape[0]>5:
-            if p[0] + p[7] > 1:
-                return -np.inf
-            
-        # penalty for having mu_1 > mu_2 or mu_2 > mu_3
-        for i in [1,3]:
-            if i + 3 < p.shape[0]:
-                if p[i] > p[i+2]:
-                    return -np.inf
-        
-        # Jeffrey prior on the sigmas
-        prior = 0.0
-        for i in [2,4,6]:
-            if i < p.shape[0]:
-                if p[i] <= 0:           # this should be removed by the bounds but better safe than sorry
-                    return -np.inf
-                else:
-                    prior += -np.log(p[i])
-
-        return 0.0
-    
-    def log_likelihood(self, p):
-        expected_count = self.N * self.model(self.center, p) * self.dx
-        if np.any((expected_count == 0) & (self.counts > 0)):       # if expected == 0 we have a nan problem, but if also counts == 0 it's right
-            return -np.inf                                          # in the case that the model sees 0 counts but in realty there are return -inf
-        
-        log_like = xlogy(self.counts, expected_count) - expected_count
-        log_like = np.sum(log_like)
-        return log_like
-
-
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     import os
+    import h5py
 
     rng = np.random.default_rng(111) # initialize seed for reproducibility
 
     main_dir = os.path.dirname(os.path.realpath(__file__))
-    log_T90, d_log_T90, Hardness_R = np.loadtxt(main_dir+"/Data/GRB_data.txt", unpack=True)
+    log_T90, d_log_T90, Hardness_R = np.loadtxt(main_dir+"\\Data\\GRB_data.txt", unpack=True)
     
     nbins = 50
     bins = np.linspace(-4, 7, nbins)
@@ -130,10 +82,10 @@ if __name__ == "__main__":
     counts, _ = np.histogram(log_T90, bins = bins)                      # used for the real analysis
     center = (edges[1:] + edges[:-1])*0.5
 
-    name2 = ["w", "mu_1", "sigma_1", "mu_2", "sigma_2"]
+    name2 = ["$w$", "$\\mu_1$", "$\\sigma_1$", "$\\mu_2$", "$\\sigma_2$"]
     bounds2 = np.array([[0.0,1.0], [-4.0,7.0], [0.01,3.0] , [-4.0, 7.0], [0.01,3.0]])
 
-    name3 = ["w_1", "mu_1", "sigma_1", "mu_2", "sigma_2", "mu_3", "sigma_3", "w_2"]
+    name3 = ["$w_1$", "$\\mu_1$", "$\\sigma_1$", "$\\mu_2$", "$\\sigma_2$", "$\\mu_3$", "$\\sigma_3$", "$w_2$"]
     # updated bounds given the precedent results
     bounds3 = np.array([[0.0,1.0], 
                         [-4.0, 2.0], [0.01,3.0],     # first gaussian on the short GRB
@@ -142,52 +94,83 @@ if __name__ == "__main__":
                         [0.0,1.0]])
     
     xx = np.linspace(-4,7,100)
-    par_val = np.array([0.1, -1, 0.5, 1, 1, 3.5, 1, 0.2])
-    pdf_f = three_weighted_log_normal(xx, par_val)
-    w_normal_1 = par_val[0] * gauss(xx, par_val[1], par_val[2])
-    w_normal_2 = par_val[7] * gauss(xx, par_val[3], par_val[4])
-    w_normal_3 = (1-par_val[0]-par_val[7]) * gauss(xx, par_val[5], par_val[6])
+    
+    # take sample and evidence from the saved file
+    # first for the case of uniform priors, then Jeffereys
+    
+    filename = os.path.join("two_class_output","raynest.h5")
+    h5_file = h5py.File(filename,'r')
+    samples2 = h5_file['combined'].get('posterior_samples')
+    log_evidence2 = h5_file['combined'].get('logZ')[()]
+    
+    filename = os.path.join("three_class_output","raynest.h5")
+    h5_file = h5py.File(filename,'r')
+    samples3 = h5_file['combined'].get('posterior_samples')
+    log_evidence3 = h5_file['combined'].get('logZ')[()]
 
-    """# plot the data
-    plt.figure("Data and model")
-    plt.plot(center, hist, '.', label = "Data")
-    plt.plot(xx, pdf_f, 'r', label = "Model, theta eye-fitted")
+    print(f"The Odd ratio is O_23 = {np.exp(log_evidence2-log_evidence3):.2e} (uniform priors)")
+
+    # first of all: trace of the samples, burnin and thinning
+    print(
+        np.vstack([samples2[()][t] for t in range(len(samples2))])
+                    )
+
+    exit()
+    # plot the data with the best fit for 2 classes
+    posterior_models = [weighted_log_normal(xx, s) for s in samples2]
+    pdf2 = np.percentile(posterior_models,50,axis=0)
+    w_normal_1 = np.percentile([s[0] * gauss(xx, s[1], s[2]) for s in samples2], 50, axis=0)
+    w_normal_2 = np.percentile([(1-s[0]) * gauss(xx, s[3], s[4]) for s in samples2], 50, axis=0)
+    
+    plt.figure("Data and 2 class model", figsize = (6.4, 4.8))
+    plt.stairs(hist, edges, color = 'C0', label = 'Data', linewidth = 1.5)
+    plt.plot(xx, pdf2, 'r', label = "Model")
     plt.plot(xx, w_normal_1, 'g', label = "Norm 1", alpha = 0.5)
     plt.plot(xx, w_normal_2, color = 'orange', label = "Norm 2", alpha = 0.5)
-    plt.plot(xx, w_normal_3, color = 'purple', label = "Norm 3", alpha = 0.5)
     plt.xlabel("$\\log(T_{90})$")
     plt.ylabel("Normalized Counts")
-    plt.legend()"""
+    plt.legend()
+    plt.savefig(main_dir+"\\Results\\Model_2.png", dpi = 600)
+
+    # plot the data with the best fit for 3 classes
+    posterior_models = [three_weighted_log_normal(xx, s) for s in samples3]
+    pdf3 = np.percentile(posterior_models,50,axis=0)
+    w_normal_1 = np.percentile([s[0] * gauss(xx, s[1], s[2]) for s in samples3], 50, axis=0)
+    w_normal_2 = np.percentile([s[7] * gauss(xx, s[3], s[4]) for s in samples3], 50, axis=0)
+    w_normal_3 = np.percentile([(1-s[0]-s[7]) * gauss(xx, s[5], s[6]) for s in samples3], 50, axis=0)
     
-    # try to initialise things
+    plt.figure("Data and 3 class model", figsize = (6.4, 4.8))
+    plt.stairs(hist, edges, color = 'C0', label = 'Data', linewidth = 1.5)
+    plt.plot(xx, pdf3, 'r', label = "Model")
+    plt.plot(xx, w_normal_1, 'g', label = "Norm 1", alpha = 0.5)
+    plt.plot(xx, w_normal_2, color = 'purple', label = "Norm 2", alpha = 0.5)
+    plt.plot(xx, w_normal_3, color = 'orange', label = "Norm 3", alpha = 0.5)
+    plt.xlabel("$\\log(T_{90})$")
+    plt.ylabel("Normalized Counts")
+    plt.legend()
+    plt.savefig(main_dir+"\\Results\\Model_3.png", dpi = 600)
+
+    # plot the data with the two best fit
+    plt.figure("Data and the two models", figsize = (6.4, 4.8))
+    plt.stairs(hist, edges, color = 'C0', label = 'Data', linewidth = 1.5)
+    plt.plot(xx, pdf2, 'r', label = "Model with 2 classes")
+    plt.plot(xx, pdf3, 'g', label = "Model with 3 classes")
+    plt.xlabel("$\\log(T_{90})$")
+    plt.ylabel("Normalized Counts")
+    plt.legend()
+    plt.savefig(main_dir+"\\Results\\Model_both.png", dpi = 600)
     
-    two_class_model = FunctionalModel(counts, center, weighted_log_normal, bounds2, name2)
-    three_class_model = FunctionalModel(counts, center, three_weighted_log_normal, bounds3, name3)
+    # given that I think they will be very similar plot the difference
+    plt.figure("Difference of the two models", figsize = (6.4, 4.8))
+    plt.plot(xx, pdf2-pdf3, 'C0', label = "Difference of the models (2-3)")
+    plt.xlabel("$\\log(T_{90})$")
+    plt.ylabel("Difference")
+    plt.legend()
+    plt.savefig(main_dir+"\\Results\\Model_difference.png", dpi = 600)
+    #plt.show()
 
-    run2  = True
-    run3  = True
-    nlive = 2000
+    #Jeffreys priors
 
-    if run2 == True:
-        work = raynest.raynest(two_class_model, verbose=2,                  # model on which infer, output on screen and memory (how much the function speaks)
-                               nnest=1,                                     # parallelize: number of parallel algorithm
-                               nensemble=6, nslice=0, nhamiltonian=0,       # method of replacing the live points
-                               nlive=nlive, maxmcmc=5000,                   # number of live points (> 2*ndim + 1), max number of MCMC willing to take to have the new live point
-                               resume=0, periodic_checkpoint_interval=100,  # resume True and save the situation of algorithm every periodic_time 
-                               output='J_two_class_output')                   # where to save the results 
-        work.run()
-
-    if run3 == True:
-        work = raynest.raynest(three_class_model, verbose=2,
-                               nnest=1,
-                               nensemble=6, nslice=0, nhamiltonian=0,
-                               nlive=nlive, maxmcmc=5000,
-                               resume=0, periodic_checkpoint_interval=100,
-                               output='J_three_class_output')
-        work.run()
-
-    # take sample and evidence from the saved file
-    import h5py
     filename = os.path.join("J_two_class_output","raynest.h5")
     h5_file = h5py.File(filename,'r')
     samples2 = h5_file['combined'].get('posterior_samples')
@@ -214,7 +197,7 @@ if __name__ == "__main__":
     plt.xlabel("$\\log(T_{90})$")
     plt.ylabel("Normalized Counts")
     plt.legend()
-    plt.savefig(main_dir+"/Results/J_Model_2.png", dpi = 600)
+    plt.savefig(main_dir+"\\Results\\J_Model_2.png", dpi = 600)
 
     # plot the data with the best fit for 3 classes
     posterior_models = [three_weighted_log_normal(xx, s) for s in samples3]
@@ -232,7 +215,7 @@ if __name__ == "__main__":
     plt.xlabel("$\\log(T_{90})$")
     plt.ylabel("Normalized Counts")
     plt.legend()
-    plt.savefig(main_dir+"/Results/J_Model_3.png", dpi = 600)
+    plt.savefig(main_dir+"\\Results\\J_Model_3.png", dpi = 600)
 
     # plot the data with the two best fit
     plt.figure("Data and the two models", figsize = (6.4, 4.8))
@@ -242,7 +225,7 @@ if __name__ == "__main__":
     plt.xlabel("$\\log(T_{90})$")
     plt.ylabel("Normalized Counts")
     plt.legend()
-    plt.savefig(main_dir+"/Results/J_Model_both.png", dpi = 600)
+    plt.savefig(main_dir+"\\Results\\J_Model_both.png", dpi = 600)
     
     # given that I think they will be very similar plot the difference
     plt.figure("Difference of the two models", figsize = (6.4, 4.8))
@@ -250,5 +233,5 @@ if __name__ == "__main__":
     plt.xlabel("$\\log(T_{90})$")
     plt.ylabel("Difference")
     plt.legend()
-    plt.savefig(main_dir+"/Results/J_Model_difference.png", dpi = 600)
+    plt.savefig(main_dir+"\\Results\\J_Model_difference.png", dpi = 600)
     #plt.show()

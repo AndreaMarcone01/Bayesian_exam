@@ -1,3 +1,5 @@
+# Python script for point 1a: find parameters of the classification model
+
 import numpy as np
 from scipy.special import xlogy
 from pdf_analysis import errors_around_peak

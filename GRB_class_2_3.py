@@ -1,3 +1,5 @@
+# Python script for points 2 and 3: classification of a GRB and probabilities of short and long
+
 import numpy as np
 
 def gauss(x, mu, sigma):
