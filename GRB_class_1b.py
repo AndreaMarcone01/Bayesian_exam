@@ -409,18 +409,18 @@ if __name__ == "__main__":
 
     # end of first point: save, show or close all the open figures
     """
-    fig1.savefig(main_dir+"\\Results\\1b\\Parameters_chain.png", dpi = 600)
-    fig2.savefig(main_dir+"\\Results\\1b\\Parameters_chain_zoom.png", dpi = 600)
-    fig3.savefig(main_dir+"\\Results\\1b\\Parameters_autocorr.png", dpi = 600)
-    fig4.savefig(main_dir+"\\Results\\1b\\Parameters_autocorr_zoom.png", dpi = 600)
-    fig5.savefig(main_dir+"\\Results\\1b\\Parameters_hist.png", dpi = 600)
-    fig6.savefig(main_dir+"\\Results\\1b\\Data_and_model.png", dpi = 600)
+    fig1.savefig(main_dir+"\\Results\\1b\\Err_Parameters_chain.png", dpi = 600)
+    fig2.savefig(main_dir+"\\Results\\1b\\Err_Parameters_chain_zoom.png", dpi = 600)
+    fig3.savefig(main_dir+"\\Results\\1b\\Err_Parameters_autocorr.png", dpi = 600)
+    fig4.savefig(main_dir+"\\Results\\1b\\Err_Parameters_autocorr_zoom.png", dpi = 600)
+    fig5.savefig(main_dir+"\\Results\\1b\\Err_Parameters_hist.png", dpi = 600)
+    fig6.savefig(main_dir+"\\Results\\1b\\Err_Data_and_model.png", dpi = 600)
 
     header = "par_val d_par_plus d_par_minus"
-    np.savetxt(main_dir+"\\Results\\1b\\parameters_values.txt", np.array([par_val, d_par_plus, d_par_minus]).T, header=header)
+    np.savetxt(main_dir+"\\Results\\1b\\Err_parameters_values.txt", np.array([par_val, d_par_plus, d_par_minus]).T, header=header)
 
     header = "model w_normal_1 w_normal_2"
-    np.savetxt(main_dir+"\\Results\\1b\\model_values.txt", np.array([pdf, w_normal_1, w_normal_2]).T, header=header)
+    np.savetxt(main_dir+"\\Results\\1b\\Err_model_values.txt", np.array([pdf, w_normal_1, w_normal_2]).T, header=header)
     """
     
     #plt.show()
