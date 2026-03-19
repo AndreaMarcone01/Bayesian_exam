@@ -214,8 +214,21 @@ if __name__ == "__main__":
     main_dir = os.path.dirname(os.path.realpath(__file__))
     log_T90, d_log_T90, log_HR = np.loadtxt(main_dir+"\\Data\\GRB_data.txt", unpack=True)
 
-    fig = plt.figure("logT-logHR plane")
+    fig1 = plt.figure("logT-logHR plane")
     plt.scatter(log_T90, log_HR, marker = '.', label = 'Data')
     plt.xlabel("$\\log(T_{90})$")
     plt.ylabel("$\\log(HR)$")
+    plt.tight_layout()
+    
+
+    fig1 = plt.figure("logT-logHR plane and marginals")
+    ax = fig1.add_subplot(2,2,3)
+    axT = fig1.add_subplot(2,2,1, sharex = ax)
+    axH = fig1.add_subplot(2,2,4, sharey = ax)
+    axT.hist(log_T90, bins=50)
+    axH.hist(log_HR, bins=50, orientation="horizontal")
+    ax.scatter(log_T90, log_HR, marker = '.', label = 'Data')
+    ax.set_xlabel("$\\log(T_{90})$")
+    ax.set_ylabel("$\\log(HR)$")
+    plt.tight_layout()
     plt.show()
