@@ -254,7 +254,7 @@ if __name__ == "__main__":
     
     # try to initialise things
         
-    run = True
+    run = False
     prep_run = True
 
     if run == True:
