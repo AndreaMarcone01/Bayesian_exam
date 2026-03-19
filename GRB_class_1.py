@@ -238,15 +238,16 @@ if __name__ == "__main__":
     pdf = weighted_log_normal(xx, theta_0)
     pdf_f = weighted_log_normal(xx, theta_fit)
 
-    """ # plot the data
+    """
+    # plot the data
     plt.figure("Data and model")
-    plt.stairs(hist, edges, color = 'C0', label = 'Data', linewidth = 1.5)
-    plt.plot(xx, pdf, 'r', label = "Model, theta random")
-    plt.plot(xx, pdf_f, 'g', label = "Model, theta eye-fitted")
-    #plt.plot(xx, w_normal_2, label = "Norm 2", alpha = 0.5)
+    plt.stairs(counts, edges, color = 'C0', label = 'Data', linewidth=1.5)
     plt.xlabel("$\\log(T_{90})$")
-    plt.ylabel("Normalized Counts")
+    plt.ylabel("Counts")
     plt.legend()
+    plt.savefig(main_dir+"\\Results\\Data.png", dpi = 600)
+    plt.show()
+    exit()
     """
 
     # try to initialise things
@@ -309,7 +310,6 @@ if __name__ == "__main__":
     ax.set_xlabel("Iteration")
     plt.legend()
     """
-    
     
     # look at autocorrelation for theta
     fig3 = plt.figure("Parameters autocorrelation", figsize = (6,6))
