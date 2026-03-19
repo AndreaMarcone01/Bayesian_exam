@@ -281,20 +281,19 @@ if __name__ == "__main__":
         
 
     # Look at the results
-    fig = plt.figure("Parameters chain", figsize = (6,6))
+    fig1 = plt.figure("Parameters chain", figsize = (6,6))
     for i in range(samples.shape[1]):
-        ax = fig.add_subplot(5, 1, i+1)
+        ax = fig1.add_subplot(5, 1, i+1)
         ax.plot(samples[:,i], '.', color = 'C0')
         ax.axhline(theta_0[i], color = 'orange', label = 'Initial value', linestyle = 'dashed')
         ax.set_ylabel(par_name[i])
     ax.set_xlabel("Iteration")
     plt.tight_layout()
-    plt.savefig(main_dir+"\\Results\\1b\\Parameters_chain.png", dpi = 600)
 
     burnin = 250 
-    fig = plt.figure("Parameters chain: zoom to burn-in", figsize = (6,6))
+    fig2 = plt.figure("Parameters chain: zoom to burn-in", figsize = (6,6))
     for i in range(samples.shape[1]):
-        ax = fig.add_subplot(5, 1, i+1)
+        ax = fig2.add_subplot(5, 1, i+1)
         ax.plot(samples[:,i], '.', color = 'C0')
         ax.axhline(theta_0[i], color = 'orange', label = 'Initial value', linestyle = 'dashed')
         ax.axvline(burnin, color = 'r', label = 'Proposed burn-in', linestyle = 'dashed')
@@ -302,7 +301,6 @@ if __name__ == "__main__":
         ax.set_ylabel(par_name[i])
     ax.set_xlabel("Iteration")
     plt.tight_layout()
-    plt.savefig(main_dir+"\\Results\\1b\\Parameters_chain_zoom.png", dpi = 600)
 
     """
     fig = plt.figure("Chain posterior")
@@ -317,26 +315,24 @@ if __name__ == "__main__":
     
     
     # look at autocorrelation for theta
-    fig = plt.figure("Parameters autocorrelation", figsize = (6,6))
+    fig3 = plt.figure("Parameters autocorrelation", figsize = (6,6))
     for i in range(samples.shape[1]):
-        ax = fig.add_subplot(5, 1, i+1)
+        ax = fig3.add_subplot(5, 1, i+1)
         ax.plot(autocorrelation(samples[:,i]), '.', color = 'C0', label = 'Autocorrelation')
         ax.set_ylabel(par_name[i])
     ax.set_xlabel("Iteration")
     plt.tight_layout()
-    plt.savefig(main_dir+"\\Results\\1b\\Parameters_autocorr.png", dpi = 600)
 
     thinning = 200
-    fig = plt.figure("Parameters autocorrelation: zoom to thinning", figsize = (6,6))
+    fig4 = plt.figure("Parameters autocorrelation: zoom to thinning", figsize = (6,6))
     for i in range(samples.shape[1]):
-        ax = fig.add_subplot(5, 1, i+1)
+        ax = fig4.add_subplot(5, 1, i+1)
         ax.plot(autocorrelation(samples[:,i]), '.', color = 'C0', label = 'Autocorrelation')
         ax.axvline(thinning, color = 'r', label = 'Proposed thinning', linestyle = 'dashed')
         ax.set_ylabel(par_name[i])
         ax.set_xlim(-50, 2 * thinning)
     ax.set_xlabel("Iteration")
     plt.tight_layout()
-    plt.savefig(main_dir+"\\Results\\1b\\Parameters_autocorr_zoom.png", dpi = 600)
     
     # after burn-in and autocorrelation we plot the histograms of the parameters
     parameters = samples[burnin:,:]
@@ -353,33 +349,44 @@ if __name__ == "__main__":
         center_i = 0.5*(bins_i[1:] + bins_i[:-1])
         par_val[i], d_par_plus[i], d_par_minus[i] = errors_around_peak(center_i, counts_i)
 
-    header = "par_val d_par_plus d_par_minus"
-    np.savetxt(main_dir+"\\Results\\1b\\parameters_values.txt", np.array([par_val, d_par_plus, d_par_minus]).T, header=header)
-
-
-    fig = plt.figure("Parameters histogram", figsize = (6,6))
+    
+    fig5 = plt.figure("Parameters histogram", figsize = (6,6))
     for i in range(parameters.shape[1]):
-        ax = fig.add_subplot(5, 1, i+1)
+        if i > 0:
+            ax = fig5.add_subplot(3, 2, i+2)
+        else:
+            ax = fig5.add_subplot(3, 2, i+1)
         counts_i, bins_i = np.histogram(parameters[:,i], bins = 30, density=True)
-        ax.stairs(counts_i, bins_i, color = 'C0', label = 'Posterior samples', linewidth = 1.5)
+        ax.stairs(counts_i, bins_i, color = 'C0', linewidth = 1.5, baseline=0)
         # plot the priors, Jeffrey for sigmas and uniform for others
         if i == 2 or i == 4:
             a = bounds[i][0]
             b = bounds[i][1]
             ss = np.linspace(a, b, 100)
-            ax.plot(ss, 1/(np.log(b/a) * ss), color = 'r', label = "Prior", linestyle='dashed')
+            ax.plot(ss, 1/(np.log(b/a) * ss), color = 'r', linestyle='dashed')
         else:
-            ax.axhline(1/(bounds[i][1] - bounds[i][0]), color = 'r', label = "Prior", linestyle='dashed')
+            ax.axhline(1/(bounds[i][1] - bounds[i][0]), color = 'r', linestyle='dashed')
 
-        ax.axvline(par_val[i], color = 'green', label = "Peak value", linestyle='dashed')
+        ax.axvline(par_val[i], color = 'green', linestyle='dashed')
         ax.axvline(par_val[i]+d_par_plus[i], color = 'orange', linestyle='dashed')
-        ax.axvline(par_val[i]-d_par_minus[i], color = 'orange', label = "Peak value $\\pm\\sigma$", linestyle='dashed')
+        ax.axvline(par_val[i]-d_par_minus[i], color = 'orange', linestyle='dashed')
         ax.set_xlabel(par_name[i])
         delta = 2*np.diff(bins_i)[0]
         ax.set_xlim(np.min(bins_i)-delta, np.max(bins_i)+delta)
         ax.set_ylim(0, np.max(counts_i) * 1.1)
+
+    ax_leg = fig5.add_subplot(3,2,2)
+    # Create dummy artists just for the legend
+    from matplotlib.lines import Line2D
+    legend_elements = [
+        Line2D([0], [0], color='C0', linewidth=1.5, label='Marginalised posterior samples'),
+        Line2D([0], [0], color='r', linestyle='dashed', label='Prior'),
+        Line2D([0], [0], color='green', linestyle='dashed', label='Median value'),
+        Line2D([0], [0], color='orange', linestyle='dashed', label='Median value $\\pm\\sigma$'),
+    ]
+    ax_leg.legend(handles=legend_elements, loc='center')
+    ax_leg.axis('off')  # Hide axes, ticks, spines and background
     plt.tight_layout()
-    plt.savefig(main_dir+"\\Results\\1b\\Parameters_hist.png", dpi = 600)
 
     
     posterior_models = [weighted_log_normal(xx, s) for s in parameters]
@@ -387,12 +394,9 @@ if __name__ == "__main__":
     w_normal_1 = np.percentile([s[0] * gauss(xx, s[1], s[2]) for s in parameters], 50, axis=0)
     w_normal_2 = np.percentile([(1-s[0]) * gauss(xx, s[3], s[4]) for s in parameters], 50, axis=0)
 
-    header = "model w_normal_1 w_normal_2"
-    np.savetxt(main_dir+"\\Results\\1b\\model_values.txt", np.array([pdf, w_normal_1, w_normal_2]).T, header=header)
-
-
+   
     # plot the data with the best fit
-    plt.figure("Data and result")
+    fig6 = plt.figure("Data and result")
     plt.plot(xx, data_n, color = 'C0', label = 'Data')
     plt.plot(xx, pdf, 'r', label = "Model")
     plt.fill_between(xx, h, l, facecolor='tomato', alpha = 0.5)
@@ -402,9 +406,22 @@ if __name__ == "__main__":
     plt.ylabel("Normalized Counts")
     plt.legend()
     plt.grid(linestyle = 'dashed')
-    plt.savefig(main_dir+"\\Results\\1b\\Data_and_model.png", dpi = 600)
 
-    # end of first point: show or close all the open figures
-    # I have commented all the savefig
+    # end of first point: save, show or close all the open figures
+    """
+    fig1.savefig(main_dir+"\\Results\\1b\\Parameters_chain.png", dpi = 600)
+    fig2.savefig(main_dir+"\\Results\\1b\\Parameters_chain_zoom.png", dpi = 600)
+    fig3.savefig(main_dir+"\\Results\\1b\\Parameters_autocorr.png", dpi = 600)
+    fig4.savefig(main_dir+"\\Results\\1b\\Parameters_autocorr_zoom.png", dpi = 600)
+    fig5.savefig(main_dir+"\\Results\\1b\\Parameters_hist.png", dpi = 600)
+    fig6.savefig(main_dir+"\\Results\\1b\\Data_and_model.png", dpi = 600)
+
+    header = "par_val d_par_plus d_par_minus"
+    np.savetxt(main_dir+"\\Results\\1b\\parameters_values.txt", np.array([par_val, d_par_plus, d_par_minus]).T, header=header)
+
+    header = "model w_normal_1 w_normal_2"
+    np.savetxt(main_dir+"\\Results\\1b\\model_values.txt", np.array([pdf, w_normal_1, w_normal_2]).T, header=header)
+    """
+    
     #plt.show()
     #plt.close('all')

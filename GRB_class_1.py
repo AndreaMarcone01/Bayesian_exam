@@ -207,6 +207,7 @@ def autocorrelation(x, norm = True):
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
+    from matplotlib.lines import Line2D
     import os
 
     rng = np.random.default_rng(1313) # initialize seed for reproducibility
@@ -346,29 +347,44 @@ if __name__ == "__main__":
         center_i = 0.5*(bins_i[1:] + bins_i[:-1])
         par_val[i], d_par_plus[i], d_par_minus[i] = errors_around_peak(center_i, counts_i)
 
+    # histogram of the parameters
     fig5 = plt.figure("Parameters histogram", figsize = (6,6))
     for i in range(parameters.shape[1]):
-        ax = fig5.add_subplot(5, 1, i+1)
+        if i > 0:
+            ax = fig5.add_subplot(3, 2, i+2)
+        else:
+            ax = fig5.add_subplot(3, 2, i+1)
         counts_i, bins_i = np.histogram(parameters[:,i], bins = 30, density=True)
-        ax.stairs(counts_i, bins_i, color = 'C0', label = 'Posterior samples', linewidth = 1.5)
+        ax.stairs(counts_i, bins_i, color = 'C0', linewidth = 1.5, baseline=0)
         # plot the priors, Jeffrey for sigmas and uniform for others
         if i == 2 or i == 4:
             a = bounds[i][0]
             b = bounds[i][1]
             ss = np.linspace(a, b, 100)
-            ax.plot(ss, 1/(np.log(b/a) * ss), color = 'r', label = "Prior", linestyle='dashed')
+            ax.plot(ss, 1/(np.log(b/a) * ss), color = 'r', linestyle='dashed')
         else:
-            ax.axhline(1/(bounds[i][1] - bounds[i][0]), color = 'r', label = "Prior", linestyle='dashed')
+            ax.axhline(1/(bounds[i][1] - bounds[i][0]), color = 'r', linestyle='dashed')
 
-        ax.axvline(par_val[i], color = 'green', label = "Peak value", linestyle='dashed')
+        ax.axvline(par_val[i], color = 'green', linestyle='dashed')
         ax.axvline(par_val[i]+d_par_plus[i], color = 'orange', linestyle='dashed')
-        ax.axvline(par_val[i]-d_par_minus[i], color = 'orange', label = "Peak value $\\pm\\sigma$", linestyle='dashed')
+        ax.axvline(par_val[i]-d_par_minus[i], color = 'orange', linestyle='dashed')
         ax.set_xlabel(par_name[i])
         delta = 2*np.diff(bins_i)[0]
         ax.set_xlim(np.min(bins_i)-delta, np.max(bins_i)+delta)
         ax.set_ylim(0, np.max(counts_i) * 1.1)
+
+    ax_leg = fig5.add_subplot(3,2,2)
+    # Create dummy artists just for the legend
+    legend_elements = [
+        Line2D([0], [0], color='C0', linewidth=1.5, label='Marginalised posterior samples'),
+        Line2D([0], [0], color='r', linestyle='dashed', label='Prior'),
+        Line2D([0], [0], color='green', linestyle='dashed', label='Median value'),
+        Line2D([0], [0], color='orange', linestyle='dashed', label='Median value $\\pm\\sigma$'),
+    ]
+    ax_leg.legend(handles=legend_elements, loc='center')
+    ax_leg.axis('off')  # Hide axes, ticks, spines and background
     plt.tight_layout()
-    
+
     
     posterior_models = [weighted_log_normal(xx, s) for s in parameters]
     l, pdf, h = np.percentile(posterior_models,[16,50,84],axis=0)
@@ -388,7 +404,7 @@ if __name__ == "__main__":
     plt.grid(linestyle = 'dashed')
     
     # end of first point: show, save or close all the open figures
-
+    """
     fig1.savefig(main_dir+"\\Results\\1a\\Parameters_chain.png", dpi = 600)
     fig2.savefig(main_dir+"\\Results\\1a\\Parameters_chain_zoom.png", dpi = 600)
     fig3.savefig(main_dir+"\\Results\\1a\\Parameters_autocorr.png", dpi = 600)
@@ -401,7 +417,6 @@ if __name__ == "__main__":
 
     header = "model w_normal_1 w_normal_2"
     np.savetxt(main_dir+"\\Results\\1a\\model_values.txt", np.array([pdf, w_normal_1, w_normal_2]).T, header=header)
-
-
+    """
     #plt.show()
     #plt.close('all')

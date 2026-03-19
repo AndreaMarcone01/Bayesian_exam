@@ -343,7 +343,7 @@ if __name__ == "__main__":
         ax.set_ylabel(name2_l[i])
     ax.set_xlabel("Iteration")
     plt.tight_layout()
-
+    
     # honestly burn-in = 0
 
     # look at autocorrelation for theta
@@ -354,7 +354,7 @@ if __name__ == "__main__":
         ax.set_ylabel(name2_l[i])
     ax.set_xlabel("Iteration")
     plt.tight_layout()
-
+    
     thinning = 10
     parameters = samples2[::thinning,:]
 
@@ -367,40 +367,53 @@ if __name__ == "__main__":
         center_i = 0.5*(bins_i[1:] + bins_i[:-1])
         par_val[i], d_par_plus[i], d_par_minus[i] = errors_around_peak(center_i, counts_i)
 
-    header = "par_val d_par_plus d_par_minus"
-    np.savetxt(main_dir+"\\Results\\NS\\J_2_parameters_values.txt", np.array([par_val, d_par_plus, d_par_minus]).T, header=header)
-
-
-    fig = plt.figure("J Parameters histogram 2", figsize = (6,6))
+    
+    fig1 = plt.figure("J Parameters histogram 2", figsize = (6,6))
     for i in range(parameters.shape[1]):
-        ax = fig.add_subplot(5, 1, i+1)
+        if i > 0:
+            ax = fig1.add_subplot(3, 2, i+2)
+        else:
+            ax = fig1.add_subplot(3, 2, i+1)
         counts_i, bins_i = np.histogram(parameters[:,i], bins = 30, density=True)
-        ax.stairs(counts_i, bins_i, color = 'C0', label = 'Posterior samples', linewidth = 1.5)
+        ax.stairs(counts_i, bins_i, color = 'C0', linewidth = 1.5, baseline=0)
         # plot the priors, Jeffrey for sigmas and uniform for others
-        if i == 2 or i == 4 or i == 6:
+        if i == 2 or i == 4:
             a = bounds2[i][0]
             b = bounds2[i][1]
             ss = np.linspace(a, b, 100)
-            ax.plot(ss, 1/(np.log(b/a) * ss), color = 'r', label = "Prior", linestyle='dashed')
+            ax.plot(ss, 1/(np.log(b/a) * ss), color = 'r', linestyle='dashed')
         else:
-            ax.axhline(1/(bounds2[i][1] - bounds2[i][0]), color = 'r', label = "Prior", linestyle='dashed')
-        ax.axvline(par_val[i], color = 'g', label = "Peak value", linestyle='dashed')
+            ax.axhline(1/(bounds2[i][1] - bounds2[i][0]), color = 'r', linestyle='dashed')
+
+        ax.axvline(par_val[i], color = 'green', linestyle='dashed')
         ax.axvline(par_val[i]+d_par_plus[i], color = 'orange', linestyle='dashed')
-        ax.axvline(par_val[i]-d_par_minus[i], color = 'orange', label = "Peak value $\\pm\\sigma$", linestyle='dashed')
+        ax.axvline(par_val[i]-d_par_minus[i], color = 'orange', linestyle='dashed')
         ax.set_xlabel(name2_l[i])
-        ax.set_xlim(np.min(bins_i)*0.9, np.max(bins_i)*1.1)
+        delta = 2*np.diff(bins_i)[0]
+        ax.set_xlim(np.min(bins_i)-delta, np.max(bins_i)+delta)
         ax.set_ylim(0, np.max(counts_i) * 1.1)
+
+    ax_leg = fig1.add_subplot(3,2,2)
+    # Create dummy artists just for the legend
+    from matplotlib.lines import Line2D
+    legend_elements = [
+        Line2D([0], [0], color='C0', linewidth=1.5, label='Marginalised posterior samples'),
+        Line2D([0], [0], color='r', linestyle='dashed', label='Prior'),
+        Line2D([0], [0], color='green', linestyle='dashed', label='Median value'),
+        Line2D([0], [0], color='orange', linestyle='dashed', label='Median value $\\pm\\sigma$'),
+    ]
+    ax_leg.legend(handles=legend_elements, loc='center')
+    ax_leg.axis('off')  # Hide axes, ticks, spines and background
     plt.tight_layout()
-    plt.savefig(main_dir+"\\Results\\NS\\J_2_Parameters_histogram.png", dpi = 600)
 
-
+    
     posterior_models = [weighted_log_normal(xx, s) for s in parameters]
     l, pdf2, h = np.percentile(posterior_models,[16,50,84],axis=0)
     w_normal_1 = np.percentile([s[0] * gauss(xx, s[1], s[2]) for s in parameters], 50, axis=0)
     w_normal_2 = np.percentile([(1-s[0]) * gauss(xx, s[3], s[4]) for s in parameters], 50, axis=0)
 
     # plot the data with the best fit
-    plt.figure("J Data and model 2")
+    fig2 = plt.figure("J Data and model 2")
     plt.stairs(hist, edges, color = 'C0', label = 'Data')
     plt.plot(xx, pdf2, 'r', label = "Model")
     plt.fill_between(xx, h, l, facecolor='tomato', alpha = 0.5)
@@ -410,7 +423,9 @@ if __name__ == "__main__":
     plt.ylabel("Normalized Counts")
     plt.legend()
     plt.grid(linestyle = 'dashed')
-    plt.savefig(main_dir+"\\Results\\NS\\J_2_Data_and_model.png", dpi = 600)
+
+    #store the parameters result with a different name to eventually save at end of file
+    save2 = np.array([par_val, d_par_plus, d_par_minus]).T
 
     # now all again for model with 3 class
     samples3 = samples3[()]
@@ -427,7 +442,7 @@ if __name__ == "__main__":
         ax.set_ylabel(name3_l[i])
     ax.set_xlabel("Iteration")
     plt.tight_layout()
-    
+        
     burnin = 1000
 
     # look at autocorrelation for theta
@@ -438,7 +453,7 @@ if __name__ == "__main__":
         ax.set_ylabel(name3_l[i])
     ax.set_xlabel("Iteration")
     plt.tight_layout()
-
+    
     thinning = 10
     sample = samples3[burnin:,:]
     parameters = sample[::thinning,:]
@@ -452,18 +467,15 @@ if __name__ == "__main__":
         center_i = 0.5*(bins_i[1:] + bins_i[:-1])
         par_val[i], d_par_plus[i], d_par_minus[i] = errors_around_peak(center_i, counts_i)
 
-    header = "par_val d_par_plus d_par_minus"
-    np.savetxt(main_dir+"\\Results\\NS\\J_3_parameters_values.txt", np.array([par_val, d_par_plus, d_par_minus]).T, header=header)
 
-
-    fig = plt.figure("J Parameters histogram 3", figsize = (6,6))
+    fig3 = plt.figure("J Parameters histogram 3", figsize = (6,6))
     for i in range(parameters.shape[1]):
         if i == 7:
-            ax = fig.add_subplot(4, 2, 2)
+            ax = fig3.add_subplot(4, 2, 2)
         elif i == 0:
-            ax = fig.add_subplot(4, 2, 1)
+            ax = fig3.add_subplot(4, 2, 1)
         else:
-            ax = fig.add_subplot(4, 2, i+2)
+            ax = fig3.add_subplot(4, 2, i+2)
         counts_i, bins_i = np.histogram(parameters[:,i], bins = 30, density=True)
         ax.stairs(counts_i, bins_i, color = 'C0', label = 'Posterior samples', linewidth = 1.5)
         # plot the priors, Jeffrey for sigmas and uniform for others
@@ -478,12 +490,12 @@ if __name__ == "__main__":
         ax.axvline(par_val[i]+d_par_plus[i], color = 'orange', linestyle='dashed')
         ax.axvline(par_val[i]-d_par_minus[i], color = 'orange', label = "Peak value $\\pm\\sigma$", linestyle='dashed')
         ax.set_xlabel(name3_l[i])
-        ax.set_xlim(np.min(bins_i)*0.9, np.max(bins_i)*1.1)
+        delta = 2*np.diff(bins_i)[0]
+        ax.set_xlim(np.min(bins_i)-delta, np.max(bins_i)+delta)
         ax.set_ylim(0, np.max(counts_i) * 1.1)
     plt.tight_layout()
-    plt.savefig(main_dir+"\\Results\\NS\\J_3_Parameters_histogram.png", dpi = 600)
 
-
+    
     posterior_models = [three_weighted_log_normal(xx, s) for s in parameters]
     l, pdf3, h = np.percentile(posterior_models,[16,50,84],axis=0)
     w_normal_1 = np.percentile([s[0] * gauss(xx, s[1], s[2]) for s in parameters], 50, axis=0)
@@ -491,7 +503,7 @@ if __name__ == "__main__":
     w_normal_3 = np.percentile([(1-s[0]-s[7]) * gauss(xx, s[5], s[6]) for s in parameters], 50, axis=0)
 
     # plot the data with the best fit
-    plt.figure("J Data and model 3")
+    fig4 = plt.figure("J Data and model 3")
     plt.stairs(hist, edges, color = 'C0', label = 'Data')
     plt.plot(xx, pdf3, 'r', label = "Model")
     plt.fill_between(xx, h, l, facecolor='tomato', alpha = 0.5)
@@ -502,10 +514,10 @@ if __name__ == "__main__":
     plt.ylabel("Normalized Counts")
     plt.legend()
     plt.grid(linestyle = 'dashed')
-    plt.savefig(main_dir+"\\Results\\NS\\J_3_Data_and_model.png", dpi = 600)
+    
     
     # plot the data with the two best fit
-    plt.figure("J Data and the two models")
+    fig5 = plt.figure("J Data and the two models")
     plt.stairs(hist, edges, color = 'C0', label = 'Data')
     plt.plot(xx, pdf2, 'k', label = "Model with 2 classes")
     plt.plot(xx, pdf3, 'r', label = "Model with 3 classes")
@@ -513,6 +525,21 @@ if __name__ == "__main__":
     plt.ylabel("Normalized Counts")
     plt.legend()
     plt.grid(linestyle = 'dashed')
-    plt.savefig(main_dir+"\\Results\\NS\\J_Model_both.png", dpi = 600)
+    
+    # save the results
+    """
+    header = "par_val d_par_plus d_par_minus"
+    # from the 2 class analysis
+    fig1.savefig(main_dir+"\\Results\\NS\\J_2_Parameters_histogram.png", dpi = 600)
+    fig2.savefig(main_dir+"\\Results\\NS\\J_2_Data_and_model.png", dpi = 600)
+    np.savetxt(main_dir+"\\Results\\NS\\J_2_parameters_values.txt", save2, header=header)
 
+    # from the 3 class analysis
+    fig3.savefig(main_dir+"\\Results\\NS\\J_3_Parameters_histogram.png", dpi = 600)
+    fig4.savefig(main_dir+"\\Results\\NS\\J_3_Data_and_model.png", dpi = 600)
+    np.savetxt(main_dir+"\\Results\\NS\\J_3_parameters_values.txt", np.array([par_val, d_par_plus, d_par_minus]).T, header=header)
+
+    # both models
+    fig5.savefig(main_dir+"\\Results\\NS\\J_Model_both.png", dpi = 600)
+    """
     #plt.show()
