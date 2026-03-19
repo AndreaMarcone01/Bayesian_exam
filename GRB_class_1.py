@@ -207,7 +207,6 @@ def autocorrelation(x, norm = True):
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
-    from matplotlib.lines import Line2D
     import os
 
     rng = np.random.default_rng(1313) # initialize seed for reproducibility
@@ -375,6 +374,7 @@ if __name__ == "__main__":
 
     ax_leg = fig5.add_subplot(3,2,2)
     # Create dummy artists just for the legend
+    from matplotlib.lines import Line2D
     legend_elements = [
         Line2D([0], [0], color='C0', linewidth=1.5, label='Marginalised posterior samples'),
         Line2D([0], [0], color='r', linestyle='dashed', label='Prior'),
@@ -400,6 +400,7 @@ if __name__ == "__main__":
     plt.plot(xx, w_normal_2, color = 'orange', label = "Norm 2", alpha = 0.5)
     plt.xlabel("$\\log(T_{90})$")
     plt.ylabel("Normalized Counts")
+    plt.ylim([0,0.395])
     plt.legend()
     plt.grid(linestyle = 'dashed')
     

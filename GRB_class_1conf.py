@@ -18,7 +18,6 @@ if __name__ == "__main__":
         else:
             ax = fig.add_subplot(3, 2, i+1)
         
-        print(par[i], [[par_minus[i]], [par_plus[i]]])
         errors = [[par_minus[i]], [par_plus[i]]]
         ax.errorbar(0, par[i], yerr=[[par_minus[i]], [par_plus[i]]], color = 'c', fmt= 'o')
         ax.errorbar(1, e_par[i], yerr=[[e_par_minus[i]], [e_par_plus[i]]], color = 'm', fmt= 'o')

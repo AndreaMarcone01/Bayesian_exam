@@ -254,7 +254,7 @@ if __name__ == "__main__":
     
     # try to initialise things
         
-    run = False
+    run = True
     prep_run = True
 
     if run == True:
@@ -267,7 +267,7 @@ if __name__ == "__main__":
 
         if prep_run == True:
             # re-run chain with new covariance in proposal
-            samples, logP = metropolis_hastings(theta_0, log_posterior, counts, center, 
+            samples, logP = metropolis_hastings(theta_0, log_posterior, data, xx, 
                                             weighted_log_normal, bounds, rng, blind = False, n=100000)
         
         # save the chain
@@ -404,11 +404,12 @@ if __name__ == "__main__":
     plt.plot(xx, w_normal_2, color = 'orange', label = "Norm 2", alpha = 0.5)
     plt.xlabel("$\\log(T_{90})$")
     plt.ylabel("Normalized Counts")
+    plt.ylim([0,0.395])
     plt.legend()
     plt.grid(linestyle = 'dashed')
 
     # end of first point: save, show or close all the open figures
-    """
+    
     fig1.savefig(main_dir+"\\Results\\1b\\Err_Parameters_chain.png", dpi = 600)
     fig2.savefig(main_dir+"\\Results\\1b\\Err_Parameters_chain_zoom.png", dpi = 600)
     fig3.savefig(main_dir+"\\Results\\1b\\Err_Parameters_autocorr.png", dpi = 600)
@@ -421,7 +422,7 @@ if __name__ == "__main__":
 
     header = "model w_normal_1 w_normal_2"
     np.savetxt(main_dir+"\\Results\\1b\\Err_model_values.txt", np.array([pdf, w_normal_1, w_normal_2]).T, header=header)
-    """
+    
     
     #plt.show()
     #plt.close('all')
