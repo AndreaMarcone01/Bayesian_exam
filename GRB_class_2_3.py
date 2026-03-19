@@ -51,8 +51,8 @@ if __name__ == "__main__":
 
     # import results of the first point
     xx = np.linspace(-4,7,256)
-    par_val, d_par_plus, d_par_minus = np.loadtxt(main_dir+"\\Results\\parameters_values.txt", unpack = True)
-    pdf, w_normal_1, w_normal_2 = np.loadtxt(main_dir+"\\Results\\model_values.txt", unpack = True)
+    par_val, d_par_plus, d_par_minus = np.loadtxt(main_dir+"\\Results\\1a\\parameters_values.txt", unpack = True)
+    pdf, w_normal_1, w_normal_2 = np.loadtxt(main_dir+"\\Results\\1a\\model_values.txt", unpack = True)
 
 
     # Second point of the exercise: classifying a GRB
