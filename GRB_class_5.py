@@ -213,14 +213,14 @@ if __name__ == "__main__":
 
     main_dir = os.path.dirname(os.path.realpath(__file__))
     log_T90, d_log_T90, log_HR = np.loadtxt(main_dir+"\\Data\\GRB_data.txt", unpack=True)
-
-    fig1 = plt.figure("logT-logHR plane")
+    
+    
+    fig0 = plt.figure("logT-logHR plane")
     plt.scatter(log_T90, log_HR, marker = '.', label = 'Data')
     plt.xlabel("$\\log(T_{90})$")
     plt.ylabel("$\\log(HR)$")
     plt.tight_layout()
     
-
     fig1 = plt.figure("logT-logHR plane and marginals")
     ax = fig1.add_subplot(2,2,3)
     axT = fig1.add_subplot(2,2,1, sharex = ax)
@@ -231,4 +231,12 @@ if __name__ == "__main__":
     ax.set_xlabel("$\\log(T_{90})$")
     ax.set_ylabel("$\\log(HR)$")
     plt.tight_layout()
+    
+
+    fig2 = plt.figure("HR distribution with short/long")
+    plt.hist(log_HR[log_T90<1.67], bins = 30, color='g', label='Short GRB', fill = False, histtype='step')
+    plt.hist(log_HR[log_T90>1.67], bins = 30, color='orange', label='Long GRB', fill = False, histtype='step')
+    plt.xlabel("$\\log(HR)$")
+    plt.ylabel("Counts")
+    plt.legend()
     plt.show()
