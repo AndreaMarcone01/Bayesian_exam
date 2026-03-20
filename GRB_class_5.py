@@ -3,9 +3,10 @@
 import numpy as np
 from scipy.special import xlogy
 from pdf_analysis import errors_around_peak
+from scipy.stats import multivariate_normal
 
 def gauss(x, mu, sigma):
-    """Log normal model.
+    """A gaussian.
     
     Args:
         x (array): normal distributed variable, this is expected as log
@@ -19,25 +20,44 @@ def gauss(x, mu, sigma):
     pdf = 1/(np.sqrt(2 * np.pi)*sigma) * np.exp(-0.5 * ((x - mu)/sigma)**2)
     return pdf
 
-def weighted_log_normal(x, theta):
-    """Weighted sum of two log-normal.
+def gauss_2D(x, theta):
+    """Pdf of a 2D gaussian.
+    
+    Args:
+        x (array): multidimensional variable
+        theta (array): parameters in order [mu_x, mu_y, sigma_x, sigma_y, rho]
+        
+    Returns:
+        pdf (array): probability density function, normalized to 1
+    """
+
+    sigma_x = theta[2]
+    sigma_y = theta[3]
+    rho = theta[4]
+    cov = np.array([[sigma_x**2, rho*sigma_x*sigma_y],
+                    [rho*sigma_x*sigma_y, sigma_y**2]])
+    
+    multi = multivariate_normal(mean=np.array([theta[0], theta[1]]), cov=cov)
+    pdf = multi.pdf(x)
+    return pdf
+
+def weighted_2D_normal(x, theta):
+    """Weighted sum of two 2D normal.
     
     Args:
         x (array): independent variable
-        theta (array): parameter array, in order [w, mu_1, sigma_1, mu_2, sigma_2]
+        theta (array): parameter array, in order [w, theta_1, theta_2]
         
     Returns:
         total model (array): probability density function, normalized to 1
     """
 
     w = theta[0]
-    mu_1 = theta[1]
-    sigma_1 = theta[2]
-    mu_2 = theta[3]
-    sigma_2 = theta[4]
+    theta_1 = theta[1:6]
+    theta_2 = theta[6:11]
 
-    normal_1 = gauss(x, mu_1, sigma_1)
-    normal_2 = gauss(x, mu_2, sigma_2)
+    normal_1 = gauss_2D(x, theta_1)
+    normal_2 = gauss_2D(x, theta_2)
     model = w * normal_1 + (1-w) * normal_2
     return model
 
@@ -49,7 +69,7 @@ def log_prior(theta, bounds):
         bounds (array): bound for each parameter, expected as [min, max]
         
     Returns:
-        prior (float): prior for the sey theta 
+        prior (float): prior for the set of theta 
     """
     
     prior = 0
@@ -59,25 +79,27 @@ def log_prior(theta, bounds):
             return - np.inf
     
     # check if mu_1 < mu_2. System of penalty for mu_1 near mu_2?
-    if theta[1] > theta[3]:
+    if theta[1] > theta[6]:
         return - np.inf
     
     # Jeffrey prior on the sigmas
-    for i in [2,4]:
+    for i in [3,4,8,9]:
             if theta[i] <= 0:           # this should be removed by the bounds but better safe than sorry
                 return -np.inf
             else:
                 prior += - np.log(theta[i])
     
+   
     return prior
 
-def log_likelihood(theta, counts, center, model):
+def log_likelihood(theta, counts, center, dA, model):
     """Poisson log likelihood for model.
     
     Args:
         theta (array): parameters of the model
         counts (array): counts of the histogram not normalized
         center (array): center of the bins of histogram
+        dA (float) : area of a bin
         model (function): model to use
         
     Returns:
@@ -85,8 +107,7 @@ def log_likelihood(theta, counts, center, model):
     """
 
     N = np.sum(counts)
-    dx = np.diff(center)[0]
-    expected_count = N * model(center, theta) * dx
+    expected_count = N * model(center, theta) * dA
 
     if np.any((expected_count == 0) & (counts > 0)):       # if expected == 0 we have a nan problem, but if also counts == 0 it's right
             return -np.inf                                          # in the case that the model sees 0 counts but in realty there are return -inf
@@ -94,13 +115,14 @@ def log_likelihood(theta, counts, center, model):
     log_like = xlogy(counts, expected_count) - expected_count
     return np.sum(log_like)
 
-def log_posterior(theta, counts, center, model, bounds):
+def log_posterior(theta, counts, center, dA, model, bounds):
     """Log posterior for model.
     
     Args:
         theta (array): parameters of the model
         counts (array): counts of the histogram not normalized
         center (array): center of the bins of histogram
+        dA (float) : area of a bin
         model (function): model to use
         bounds (array): bound for each parameter, expected as [min, max]
         
@@ -108,7 +130,7 @@ def log_posterior(theta, counts, center, model, bounds):
         posterior (array): log of the posterior
     """
     
-    posterior = log_prior(theta, bounds) + log_likelihood(theta, counts, center, model)
+    posterior = log_prior(theta, bounds) + log_likelihood(theta, counts, center, dA, model)
     return posterior
 
 def proposed_distribution(x, bounds, rng, blind = True):
@@ -126,7 +148,7 @@ def proposed_distribution(x, bounds, rng, blind = True):
 
     d = x.shape[0]
     if blind == False:
-        fname = main_dir+"\\samples_covariance.txt"
+        fname = main_dir+"\\5_samples_covariance.txt"
         if os.path.isfile(fname) == True: 
             covariance = np.loadtxt(fname)
         else:
@@ -141,7 +163,7 @@ def proposed_distribution(x, bounds, rng, blind = True):
     pdf = rng.multivariate_normal(np.zeros(d), covariance)
     return pdf
 
-def metropolis_hastings(theta0, postpdf, counts, center, model, bounds, rng, blind, n = 10000):
+def metropolis_hastings(theta0, postpdf, counts, center, dA, model, bounds, rng, blind, n = 10000):
     """Metropolis hastings algorithm to sample the posterior.
     
     Args:
@@ -149,6 +171,7 @@ def metropolis_hastings(theta0, postpdf, counts, center, model, bounds, rng, bli
         postpdf (function): posterior to use for the chain
         counts (array): counts of the histogram not normalized
         center (array): center of the bins of histogram
+        dA (float) : area of a bin
         model (function): model to use for posterior
         bounds (array): bound for each parameter, expected as [min, max]
         rng (np.random.default_rng): default rng for reproduce results
@@ -160,7 +183,7 @@ def metropolis_hastings(theta0, postpdf, counts, center, model, bounds, rng, bli
     """
 
     d = theta0.shape[0]
-    logP0 = postpdf(theta0, counts, center, model, bounds)
+    logP0 = postpdf(theta0, counts, center, dA, model, bounds)
     samples = np.zeros((n,d), dtype=np.float64)
     logP = np.zeros(n, dtype=np.float64)
     accepted = 0
@@ -168,7 +191,7 @@ def metropolis_hastings(theta0, postpdf, counts, center, model, bounds, rng, bli
 
     for i in range(n):
         theta_try = theta0 + proposed_distribution(theta0, bounds, rng, blind)
-        logP_try = postpdf(theta_try, counts, center, model, bounds)
+        logP_try = postpdf(theta_try, counts, center, dA, model, bounds)
         
         if logP_try - logP0 > np.log(np.random.uniform(0,1)):
             samples[i,:] = theta_try
@@ -212,11 +235,47 @@ if __name__ == "__main__":
     rng = np.random.default_rng(1313) # initialize seed for reproducibility
 
     main_dir = os.path.dirname(os.path.realpath(__file__))
-    log_T90, d_log_T90, log_HR = np.loadtxt(main_dir+"\\Data\\GRB_data.txt", unpack=True)
+    log_T, d_log_T, log_HR = np.loadtxt(main_dir+"\\Data\\GRB_data.txt", unpack=True)
+
     
+    counts, xedge, yedge = np.histogram2d(log_T, log_HR, bins = 25)
+    hist, _, _ = np.histogram2d(log_T, log_HR, bins = 25, density = True)
+    counts = counts.T
+    xcenter = np.asarray(0.5*(xedge[1:] + xedge[:-1]))
+    ycenter = np.asarray(0.5*(yedge[1:] + yedge[:-1]))
+    dA = np.diff(xcenter)[0] * np.diff(ycenter)[0]
+    xc, yc = np.meshgrid(xcenter, ycenter)  # C = ax.contourf(xc, yc, counts) to plot
+                                            # plt.colorbar(C)
+    centers = np.dstack((xc, yc))           # points on which we evaluate the model
+
+    xx = np.linspace(-4,7,256)
+    yy = np.linspace(-2.5, 3.5, 256)
+    x, y = np.meshgrid(xx, yy)              # to plot smooth
+    pos_plot = np.dstack((x, y))            # what needs to be passed to model function
+
+    # build theta_0
+    theta_1 = np.array([-0.5, 0, 1, 1, 0.5])
+    theta_2 = np.array([3.5, 0, 1, 1, 0.5])
+    theta = np.array([0.5])
+    theta_0 = np.append(np.append(theta, theta_1), theta_2)
+
+    par_name = ["w", "mu_1_T", "mu_1_HR", "sigma_1_T", "sigma_1_HR", "rho1", 
+              "mu_2_T", "mu_2_HR", "sigma_2_T", "sigma_2_HR", "rho2"]
+    bounds = np.array([[0,1], 
+                       [-4,7], [-2.5, 3.5], [0.01, 3], [0.01, 3], [0,1],
+                       [-4,7], [-2.5, 3.5], [0.01, 3], [0.01, 3], [-0.99,0.99]])
+
+    """
+    fig = plt.figure(1)
+    ax  = fig.add_subplot(111)
+    C   = ax.contourf(x,y, pdf, 100)
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    plt.colorbar(C)
+    plt.show()
     
     fig0 = plt.figure("logT-logHR plane")
-    plt.scatter(log_T90, log_HR, marker = '.', label = 'Data')
+    plt.scatter(log_T, log_HR, marker = '.', label = 'Data')
     plt.xlabel("$\\log(T_{90})$")
     plt.ylabel("$\\log(HR)$")
     plt.tight_layout()
@@ -225,18 +284,20 @@ if __name__ == "__main__":
     ax = fig1.add_subplot(2,2,3)
     axT = fig1.add_subplot(2,2,1, sharex = ax)
     axH = fig1.add_subplot(2,2,4, sharey = ax)
-    axT.hist(log_T90, bins=50)
+    axT.hist(log_T, bins=50)
     axH.hist(log_HR, bins=50, orientation="horizontal")
-    ax.scatter(log_T90, log_HR, marker = '.', label = 'Data')
+    ax.scatter(log_T, log_HR, marker = '.', label = 'Data')
     ax.set_xlabel("$\\log(T_{90})$")
     ax.set_ylabel("$\\log(HR)$")
     plt.tight_layout()
     
-
     fig2 = plt.figure("HR distribution with short/long")
-    plt.hist(log_HR[log_T90<1.67], bins = 30, color='g', label='Short GRB', fill = False, histtype='step')
-    plt.hist(log_HR[log_T90>1.67], bins = 30, color='orange', label='Long GRB', fill = False, histtype='step')
+    plt.hist(log_HR[log_T<1.67], bins = 30, color='g', label='Short GRB', fill = False, histtype='step')
+    plt.hist(log_HR[log_T>1.67], bins = 30, color='orange', label='Long GRB', fill = False, histtype='step')
     plt.xlabel("$\\log(HR)$")
     plt.ylabel("Counts")
     plt.legend()
     plt.show()
+    """
+
+    # try to initialise things
