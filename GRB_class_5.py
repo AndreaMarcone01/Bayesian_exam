@@ -3,7 +3,7 @@
 import numpy as np
 from scipy.special import xlogy
 from pdf_analysis import errors_around_peak
-from scipy.stats import multivariate_normal
+from scipy.stats import multivariate_normal, multivariate_t
 
 def gauss(x, mu, sigma):
     """A gaussian.
@@ -61,172 +61,120 @@ def weighted_2D_normal(x, theta):
     model = w * normal_1 + (1-w) * normal_2
     return model
 
-def log_prior(theta, bounds):
-    """Prior for the problem inside the bounds. Uniform for w, mu_1, mu_2, Jeffrey prior for sigma_1 and sigma_2
-    
-    Args:
-        theta (array): parameters on which calculate the posterior [w, mu1, sigma1, mu2, sigma2]
-        bounds (array): bound for each parameter, expected as [min, max]
+class state():
+    def __init__(self, N_cluster, data, alpha, rng):
+        vec_z = rng.choice(N_cluster, size=len(data))
+        identity = np.diag(np.full(1,1))
+        self.state = {
+            "N_cluster_": N_cluster,                                    # number of cluster (=3)
+            "cluster_id_": range(N_cluster),                            # id of cluster [0,1,2]
+            "data_" : data,                                             # data to assign
+            "N_data_": len(data),                                       # number of points
+            "hyperparameters_": {
+                "mu_0": np.array([-1,1,3.5]),               # mu_0 for every cluster [[-1,0],[1,0],[3.5,0]]
+                "Psi_0": np.array([[identity],[identity],[identity]]),  # covariance_0 for every cluster
+                "k_0": np.full(N_cluster, 0.01),                    # k_0 confidence in mu_0
+                "nu_0": np.full(N_cluster, 3),                          # nu_0 d.o.f. must be >d-1 
+                "alpha": alpha                                          # starting alpha for dirichlet 
+            },
+            "alpha_0": np.full(N_cluster, alpha/N_cluster),             # first values of alpha_k
+            "vec_z": vec_z,                                             # first random assignemnt
+            "steps_done": 0,                                            # counter of steps done
+            "suff_stats": {                                             # store the quantities to compute the posterior parameters
+                "N_k": np.array([np.sum(vec_z==k) for k in range(N_cluster)]),              # first count of points for cluster
+                "bar_x_k": np.array([np.mean(data[vec_z==k]) for k in range(N_cluster)]),   # mean of data for cluster
+                "S_k": np.array([np.cov(data[vec_z==k], rowvar=False, bias=True) * len(data[vec_z==k])
+                                   for k in range(N_cluster)]),                             # compute the scatter matrix
+            }
+        }
+
+    def assign_new_zi(self, index):
+        # calculate the new probability of assign point i to the clusters
+        prob_zi = np.zeros(self.state["N_cluster_"])
+        self.remove_suff_stats(index)           # update all the suff stat without point i
+        for k in self.state["cluster_id_"]:
+            first_term = (self.state["alpha_0"][k] + self.state["suff_state"]["N_k"])/(self.state["hyperparameters_"]["alpha"] + self.state["N_data_"] - 1)
+            k_n, nu_n, mu_n, Psi_n = self.posterior_parameters()
+            multivariate_t_n = multivariate_t(mu_n[k], (k_n[k]+1)/(k_n[k]*nu_n[k]) * Psi_n[k], df=nu_n[k]-2+1)
+            second_term = multivariate_t_n.pdf(self.state["data_"][index])
+            prob_zi[k] = first_term * second_term
+        # normalize the probabilities
+        prob_zi = prob_zi / np.sum(prob_zi)
+        print(prob_zi)
+        # assign the new z_i for the point
+        new_k = rng.choice(self.state["N_cluster_"], p=prob_zi)
+        # re add the point removed 
+        self.state["vec_z"][index] = new_k
+        self.add_suff_stats(index, new_k)
+
+    def remove_suff_stats(self,index):
+        kk = self.state["vec_z"][index]
+        data = np.delete(self.state["data_"], index)
+        vec_z = np.delete(self.state["vec_z"], index)
+        # update the suff_stats
+        self.state["suff_stats"]["N_k"][kk] -= 1
+        self.state["suff_stats"]["bar_x_k"][kk] = np.mean(data[vec_z==kk])
+        self.state["suff_stats"]["S_k"][kk] = np.cov(data[vec_z==kk], rowvar=False, bias=True) * len(data[vec_z==kk])
         
-    Returns:
-        prior (float): prior for the set of theta 
+    def add_suff_stats(self, ii, kk):
+        # update the suff_stats of cluster kk
+        data = self.state["data_"]
+        vec_z = self.state["vec_z"]
+        self.state["suff_stats"]["N_k"][kk] += 1
+        self.state["suff_stats"]["bar_x_k"][kk] = np.mean(data[vec_z==kk])
+        self.state["suff_stats"]["S_k"][kk] = np.cov(data[vec_z==kk], rowvar=False, bias=True) * len(data[vec_z==kk])
+
+    def posterior_parameters(self):
+        # compute the posterior parameters
+        hyper = self.state["hyperparameters_"]
+        suff = self.state["suff_stats"]
+        k_n = hyper["k_0"] + suff["N_k"]
+        nu_n = hyper["nu_0"] + suff["N_k"]
+        mu_n = (hyper["k_0"] * hyper["mu_0"] + suff["N_k"] * suff["bar_x_k"])/k_n
+        Psi_n = np.array([
+            (hyper["Psi_0"][k] + suff["S_k"][k] + hyper["k_0"][k]/k_n[k] * suff["N_k"][k] * 
+             np.outer((suff["bar_x_k"][k] - hyper["mu_0"][k]), (suff["bar_x_k"][k] - hyper["mu_0"][k])))
+            for k in self.state["cluster_id_"]])
+        return k_n, nu_n, mu_n, Psi_n
+    
+    def make_a_step(self):
+        # make a step of the sampler
+        for ii in range(self.state["N_data_"]):
+            self.assign_new_zi(ii)
+        self.state["steps_done"] += 1
     """
-    
-    prior = 0
+    # don't know if this are used
+    def count_in_cluster(self, exclude_index):
+        # count the data for cluster without point i
+        vec_z_minus_i = np.delete(self.state["vec_z"], exclude_index)   # remove point i from vec_z
+        N_k_minus_i = np.zeros(self.state["N_cluster_"])                # initialise counts once removed x_i
+        for k in range(len(N_k_minus_i)):
+            N_k_minus_i[k] = np.sum(vec_z_minus_i==k)                   # counts once removed x_i
+        return N_k_minus_i
 
-    for i in range(theta.shape[0]):
-        if theta[i] < bounds[i][0] or theta[i] > bounds[i][1]:
-            return - np.inf
-    
-    # check if mu_1 < mu_2. System of penalty for mu_1 near mu_2?
-    if theta[1] > theta[6]:
-        return - np.inf
-    
-    # Jeffrey prior on the sigmas
-    for i in [3,4,8,9]:
-            if theta[i] <= 0:           # this should be removed by the bounds but better safe than sorry
-                return -np.inf
-            else:
-                prior += - np.log(theta[i])
-    
-   
-    return prior
-
-def log_likelihood(theta, counts, center, dA, model):
-    """Poisson log likelihood for model.
-    
-    Args:
-        theta (array): parameters of the model
-        counts (array): counts of the histogram not normalized
-        center (array): center of the bins of histogram
-        dA (float) : area of a bin
-        model (function): model to use
-        
-    Returns:
-        likelihood (float): log of the likelihood
-    """
-
-    N = np.sum(counts)
-    expected_count = N * model(center, theta) * dA
-
-    if np.any((expected_count == 0) & (counts > 0)):       # if expected == 0 we have a nan problem, but if also counts == 0 it's right
-            return -np.inf                                          # in the case that the model sees 0 counts but in realty there are return -inf
-        
-    log_like = xlogy(counts, expected_count) - expected_count
-    return np.sum(log_like)
-
-def log_posterior(theta, counts, center, dA, model, bounds):
-    """Log posterior for model.
-    
-    Args:
-        theta (array): parameters of the model
-        counts (array): counts of the histogram not normalized
-        center (array): center of the bins of histogram
-        dA (float) : area of a bin
-        model (function): model to use
-        bounds (array): bound for each parameter, expected as [min, max]
-        
-    Returns:
-        posterior (array): log of the posterior
-    """
-    
-    posterior = log_prior(theta, bounds) + log_likelihood(theta, counts, center, dA, model)
-    return posterior
-
-def proposed_distribution(x, bounds, rng, blind = True):
-    """Proposed distribution for the MCMC algorithm.
-    
-    Args:
-        x (array): input of the distribution
-        bound (array): bound for each parameter, expected as [min, max]. Used to define covariance
-        rng (np.random.default_rng): default rng for reproduce results
-        blind (boolean): decide if run with a blind covariance or use a already note covariance
-        
-    Returns:
-        pdf (array): proposed distribution values
-    """
-
-    d = x.shape[0]
-    if blind == False:
-        fname = main_dir+"\\5_samples_covariance.txt"
-        if os.path.isfile(fname) == True: 
-            covariance = np.loadtxt(fname)
+    def update_suff_stats(self, index=-1):
+        if index > -0.1:
+            data = np.delete(self.state["data_"], index)
+            vec_z = np.delete(self.state["vec_z"], index)
         else:
-            print("Covariance file not found!")
-            scales = 0.05 * np.diff(bounds)[:,0]
-            covariance = np.diag(scales**2) # diagonal matrix of dimension d*d
-    
-    else:
-        scales = 0.05 * np.diff(bounds)[:,0]
-        covariance = np.diag(scales**2) # diagonal matrix of dimension d*d
-    
-    pdf = rng.multivariate_normal(np.zeros(d), covariance)
-    return pdf
-
-def metropolis_hastings(theta0, postpdf, counts, center, dA, model, bounds, rng, blind, n = 10000):
-    """Metropolis hastings algorithm to sample the posterior.
-    
-    Args:
-        theta0 (array): initial point for the chain
-        postpdf (function): posterior to use for the chain
-        counts (array): counts of the histogram not normalized
-        center (array): center of the bins of histogram
-        dA (float) : area of a bin
-        model (function): model to use for posterior
-        bounds (array): bound for each parameter, expected as [min, max]
-        rng (np.random.default_rng): default rng for reproduce results
-        blind (boolean): decide if run with a blind covariance or use a already note covariance
-        n (float): length of the chain, default to 10000
-    
-    Returns:
-        samples (array): samples of the parameters
+            data = self.state["data_"]
+            vec_z = self.state["vec_z"]
+        # update the suff_stats to compute the posterior parameters
+        self.state["suff_stats"]["N_k"] = np.array([
+            np.sum(vec_z==k) for k in self.state["cluster_id_"]])
+        
+        self.state["suff_stats"]["bar_x_k"] = np.array([
+            np.mean(data[vec_z==k]) for k in self.state["cluster_id_"]])
+        
+        self.state["suff_stats"]["S_k"] = np.array([
+            np.cov(data[vec_z==k], rowvar=False, bias=True) * len(data[vec_z==k])
+            for k in self.state["cluster_id_"]])
+        
+    def update_alphas(self, exclude_index):
+        # find new alphas (don't know if it's used)
+        for k in self.state["cluster_id_"]:
+            self.state["alpha_k"][k] = self.state["alpha_"]/self.state["N_cluster_"] + self.count_in_cluster(exclude_index)[k]
     """
-
-    d = theta0.shape[0]
-    logP0 = postpdf(theta0, counts, center, dA, model, bounds)
-    samples = np.zeros((n,d), dtype=np.float64)
-    logP = np.zeros(n, dtype=np.float64)
-    accepted = 0
-    rejected = 0
-
-    for i in range(n):
-        theta_try = theta0 + proposed_distribution(theta0, bounds, rng, blind)
-        logP_try = postpdf(theta_try, counts, center, dA, model, bounds)
-        
-        if logP_try - logP0 > np.log(np.random.uniform(0,1)):
-            samples[i,:] = theta_try
-            logP[i] = logP_try
-            theta0 = theta_try
-            logP0 = logP_try
-            accepted += 1
-        else:
-            samples[i,:] = theta0
-            logP[i] = logP0
-            rejected += 1
-        
-        print(f"Iteration {i}, acceptance = {accepted/(accepted+rejected)}")
-
-    return samples, logP
-
-def autocorrelation(x, norm = True):
-    """Find the autocorrelation of x
-    
-    Args:
-        x (array): array on which compute the autocorrelation
-        norm (boolean): decide if normalize or not, default to True
-        
-    Returns:
-        autocorr (array): array of autocorrelation
-    """
-
-    f = np.fft.fft(x - np.mean(x), n = 2*len(x))
-    f_con = np.conjugate(f)
-    corr = np.real(np.fft.ifft(f * f_con)[:len(x)])
-
-    if norm == True:
-        corr /= corr[0]
-        
-    return corr
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
@@ -301,3 +249,8 @@ if __name__ == "__main__":
     """
 
     # try to initialise things
+
+    initial_state = state(3, log_T, 1, rng)
+    # try to use this to verify algorithm on log_T that I already know the results
+    # then i have to define data so that data[ii] = [log_T[ii], log_HR[ii]]
+    # and see if it runs in 2D 
