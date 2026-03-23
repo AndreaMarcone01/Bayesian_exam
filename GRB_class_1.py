@@ -83,10 +83,10 @@ def log_likelihood(theta, counts, center, model):
     Returns:
         likelihood (float): log of the likelihood
     """
-
+    
     N = np.sum(counts)
     dx = np.diff(center)[0]
-    expected_count = N * model(center, theta) * dx
+    expected_count = model(center, theta) 
 
     if np.any((expected_count == 0) & (counts > 0)):       # if expected == 0 we have a nan problem, but if also counts == 0 it's right
             return -np.inf                                          # in the case that the model sees 0 counts but in realty there are return -inf
@@ -252,8 +252,9 @@ if __name__ == "__main__":
 
     # try to initialise things
         
-    run = False
+    run = True
     prep_run = True
+    save = False
 
     if run == True:
         samples, logP = metropolis_hastings(theta_0, log_posterior, counts, center, 
@@ -269,9 +270,10 @@ if __name__ == "__main__":
                                             weighted_log_normal, bounds, rng, blind = False, n=100000)
         
         # save the chain
-        header = "w , mu_1, sigma_1, mu_2, sigma_2"
-        np.savetxt(main_dir+"\\samples_chain.txt", samples, header=header)
-        np.savetxt(main_dir+"\\samples_posterior.txt", logP, header="log posterior")
+        if save == True:
+            header = "w , mu_1, sigma_1, mu_2, sigma_2"
+            np.savetxt(main_dir+"\\samples_chain.txt", samples, header=header)
+            np.savetxt(main_dir+"\\samples_posterior.txt", logP, header="log posterior")
 
     else: 
         samples = np.loadtxt(main_dir+"\\samples_chain.txt")
@@ -419,5 +421,5 @@ if __name__ == "__main__":
     header = "model w_normal_1 w_normal_2"
     np.savetxt(main_dir+"\\Results\\1a\\model_values.txt", np.array([pdf, w_normal_1, w_normal_2]).T, header=header)
     """
-    #plt.show()
+    plt.show()
     #plt.close('all')

@@ -246,11 +246,15 @@ if __name__ == "__main__":
     
     # plot the data
     plt.figure("Data and model")
-    plt.plot(xx, data_n, 'r', label = "Data with uncertanties")
-    plt.stairs(hist, edges, color = 'C0', label = 'Data')
+    plt.plot(xx, data_n, 'r', alpha = 0.6, label = "Data with uncertanties")
+    plt.stairs(hist, edges, color = 'C0', label = 'Data', linewidth = 1.5)
     plt.xlabel("$\\log(T_{90})$")
     plt.ylabel("Normalized Counts")
+    plt.ylim([0,0.395])
     plt.legend()
+    plt.grid(linestyle = 'dashed')
+    #plt.savefig(main_dir+"\\Results\\1b\\Err_Dataset.png", dpi = 600)
+
     
     # try to initialise things
         
@@ -409,7 +413,7 @@ if __name__ == "__main__":
     plt.grid(linestyle = 'dashed')
 
     # end of first point: save, show or close all the open figures
-    
+    """
     fig1.savefig(main_dir+"\\Results\\1b\\Err_Parameters_chain.png", dpi = 600)
     fig2.savefig(main_dir+"\\Results\\1b\\Err_Parameters_chain_zoom.png", dpi = 600)
     fig3.savefig(main_dir+"\\Results\\1b\\Err_Parameters_autocorr.png", dpi = 600)
@@ -422,7 +426,7 @@ if __name__ == "__main__":
 
     header = "model w_normal_1 w_normal_2"
     np.savetxt(main_dir+"\\Results\\1b\\Err_model_values.txt", np.array([pdf, w_normal_1, w_normal_2]).T, header=header)
-    
+    """
     
     #plt.show()
     #plt.close('all')
