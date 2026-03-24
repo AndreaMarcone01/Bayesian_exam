@@ -63,25 +63,24 @@ def weighted_2D_normal(x, theta):
 
 class state():
     def __init__(self, N_cluster, data, mu_0, alpha, rng):
-        vec_z = rng.choice(N_cluster, size=data.shape[1])
-        identity = np.diag(np.full(data.shape[0],1))
-        
+        vec_z = rng.choice(N_cluster, size=data.shape[0])
+        identity = np.diag(np.full(data.shape[1],1))
+                
         # compute some suff_stats that can't be done in a line
-        bar_x_k = np.zeros((data.shape[0], N_cluster))      # firts index 0=log_T, 1=log_HR, second index = k
+        bar_x_k = np.zeros((N_cluster, data.shape[1]))      # firts index 0=log_T, 1=log_HR, second index = k
         for k in range(N_cluster):
-            for i in range(data.shape[0]):
-                bar_x_k[i,k] = np.mean(data[i,:][vec_z == k])
+            bar_x_k[k] = np.mean(data[vec_z == k], axis = 0)
 
-        S_k = np.zeros((data.shape[0], data.shape[0], N_cluster))
-        print(S_k)
+        if bar_x_k.shape != mu_0.shape:
+            print("Something is wrong, check the initial mu_0!")
+            print("Exiting...")
+            exit()
+
+        S_k = np.zeros((N_cluster, data.shape[1], data.shape[1]))
         for k in range(N_cluster):
-            for i in range(data.shape[0]):
-                for j in range(data.shape[0]):
-                    data_i = data[i,:][vec_z==k]
-                    data_j = data[j,:][vec_z==k]
-                    S_k[k] = np.cov(data_i, data_j, rowvar=False, bias=True) * (len(data_i)+len(data_j))
-        print(S_k)
-        exit()
+            data_k = data[vec_z==k]
+            diff = data_k - data_k.mean(axis=0)
+            S_k[k] =  diff.T @ diff 
 
         self.state = {
             "N_cluster_": N_cluster,                                    # number of cluster (=3)
@@ -90,7 +89,7 @@ class state():
             "N_data_": len(data),                                       # number of points
             "hyperparameters_": {
                 "mu_0": mu_0,                                           # mu_0 for every cluster
-                "Psi_0": np.array([[identity],[identity],[identity]]),  # covariance_0 for every cluster
+                "Psi_0": np.full(S_k.shape, identity),                  # covariance_0 for every cluster
                 "k_0": np.full(N_cluster, 0.1),                         # k_0 confidence in mu_0
                 "nu_0": np.full(N_cluster, 8),                          # nu_0 d.o.f. must be >d-1 
                 "alpha": alpha                                          # starting alpha for dirichlet 
@@ -125,20 +124,24 @@ class state():
 
     def remove_suff_stats(self,index):
         kk = self.state["vec_z"][index]
-        data = np.delete(self.state["data_"], index)
+        data_removed = np.delete(self.state["data_"], index, axis = 0)
         vec_z = np.delete(self.state["vec_z"], index)
         # update the suff_stats
         self.state["suff_stats"]["N_k"][kk] -= 1
-        self.state["suff_stats"]["bar_x_k"][kk] = np.mean(data[vec_z==kk])
-        self.state["suff_stats"]["S_k"][kk] = np.cov(data[vec_z==kk], rowvar=False, bias=True) * len(data[vec_z==kk])
+        self.state["suff_stats"]["bar_x_k"][kk] = np.mean(data_removed[vec_z==kk], axis = 0)
+        data_k = data_removed[vec_z==kk]
+        diff = data_k - data_k.mean(axis=0)
+        self.state["suff_stats"]["S_k"][kk] = diff.T @ diff
         
     def add_suff_stats(self, ii, kk):
         # update the suff_stats of cluster kk
         data = self.state["data_"]
         vec_z = self.state["vec_z"]
         self.state["suff_stats"]["N_k"][kk] += 1
-        self.state["suff_stats"]["bar_x_k"][kk] = np.mean(data[vec_z==kk])
-        self.state["suff_stats"]["S_k"][kk] = np.cov(data[vec_z==kk], rowvar=False, bias=True) * len(data[vec_z==kk])
+        self.state["suff_stats"]["bar_x_k"][kk] = np.mean(data[vec_z==kk], axis = 0)
+        data_k = data[vec_z==kk]
+        diff = data_k - data_k.mean(axis=0)
+        self.state["suff_stats"]["S_k"][kk] = diff.T @ diff
 
     def posterior_parameters(self):
         # compute the posterior parameters
@@ -147,7 +150,7 @@ class state():
         k_n = hyper["k_0"] + suff["N_k"]
         nu_n = hyper["nu_0"] + suff["N_k"]
         mu_n = (hyper["k_0"] * hyper["mu_0"] + suff["N_k"] * suff["bar_x_k"])/k_n
-        Psi_n = np.zeros(self.state["N_cluster_"])
+        Psi_n = np.zeros(suff["S_k"].shape)
         for k in self.state["cluster_id_"]:
             Psi_n[k] = hyper["Psi_0"][k] + suff["S_k"][k] + hyper["k_0"][k]/k_n[k] * suff["N_k"][k] * np.outer((suff["bar_x_k"][k] - hyper["mu_0"][k]), (suff["bar_x_k"][k] - hyper["mu_0"][k]))
         
@@ -298,7 +301,7 @@ if __name__ == "__main__":
 
     # thinked it would do better but no problem. Let's see the parameters
     k_n, nu_n, mu_n, Psi_n = initial_state.posterior_parameters()
-    cov = [(k_n[i]+1)/(k_n[i] * nu_n[i]) * Psi_n[i] for i in range(len(k_n))]
+    cov = [Psi_n[i]/(nu_n[i] - 1 - 1) for i in range(len(k_n))]
     print(f"The means are {mu_n}")                  # The means are [-0.0444695   3.60561329]
     print(f"And the covariancies {cov}")            # And the covariancies [2.1759942246549575, 0.8944213457721013]
     plt.show()
@@ -306,21 +309,39 @@ if __name__ == "__main__":
 
     # try to initialise things
     # I have to define data so that data[ii] = [log_T[ii], log_HR[ii]] and see if it runs in 2D 
-    data = np.array([log_T, log_HR])
-    mu_0 = np.array([[-1,0],[1,0],[3.5,0]])
-    sampler = state(2, data, mu_0=mu_0, alpha=1,rng=rng)
-    cluster_color = ['g', 'orange']
+    data = np.array([log_T, log_HR]).T          #transpose to have format (N_point, N_dim = 2)
     
+    """
+    # 3 clusters    
+    N_cluster = 3
+    mu_0 = np.array([[-1,0],[1,0],[3.5,0]])
+    """
 
-    fig4 = plt.figure("Test on log_T, initial assignment")
+    # 2 clusters    
+    N_cluster = 2
+    mu_0 = np.array([[-1,0],[3.5,0]])
+
+    sampler = state(N_cluster, data, mu_0=mu_0, alpha=1,rng=rng)
+    cluster_color = ['g', 'orange']
+
+    fig4 = plt.figure("Initial assignment")
     ax = fig4.add_subplot(111)
     for k in sampler.state["cluster_id_"]:
-        print(sampler.state["vec_z"] == k)
-        data_k_T = sampler.state["data_"][0,:][sampler.state["vec_z"] == k]
-        data_k_HR = sampler.state["data_"][1,:][sampler.state["vec_z"] == k]
-        ax.scatter(data_k_T,data_k_HR, color = cluster_color[k], label = "Cluster number "+str(k))
+        data_k = sampler.state["data_"][sampler.state["vec_z"] == k]
+        ax.scatter(data_k[:,0], data_k[:,1], marker = '.', color = cluster_color[k], label = "Cluster number "+str(k))
     ax.set_title("Initial assignment")
     ax.set_xlabel("$\\log(T_{90})$")
     ax.set_ylabel("$\\log(HR)$")
     plt.legend()
-    plt.show()
+
+    # run n_step times
+    n_step = 2
+    for _ in range(n_step):
+        sampler.make_a_step()
+        print(f"Step {sampler.state["steps_done"]} done")
+
+
+    k_n, nu_n, mu_n, Psi_n = sampler.posterior_parameters()
+    cov = [Psi_n[i]/(nu_n[i] - 1 - 1) for i in range(len(k_n))]
+    print(f"The means are {mu_n}")                  # The means are [-0.0444695   3.60561329]
+    print(f"And the covariancies {cov}")
