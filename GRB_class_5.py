@@ -194,19 +194,53 @@ if __name__ == "__main__":
 
     # run n_step times
     run = True
-    n_step = 15     # steps of the sampler
-    mu_trace = np.zeros((n_step+1, mu_0.shape[0], mu_0.shape[1]))   # save evolutions of E[mu]
+    burn_in = 6
+    n_samples = 15     # steps of the sampler
+    n_step = burn_in+n_samples
+    mu_trace = np.zeros((n_samples+1, mu_0.shape[0], mu_0.shape[1]))   # save evolutions of E[mu]
     mu_trace[0] = mu_start                                          # save starting point of means 
     log_p = np.zeros(n_step)                                  # save evolution of joint probability of state
 
     if run == True:
-        for i in range(n_step):
+        for i in range(burn_in):
             sampler.make_a_step()
-            # save the mu of the step to reconstruct the traces
+            # save the mu and the log_p of the step to reconstruct the traces
             _, _, mu_n, _ = sampler.posterior_parameters()
             mu_trace[i+1] = mu_n
             log_p[i] = sampler.state["log_joint_p"]
             print(f"Step {sampler.state["steps_done"]} done")
+        
+        print("-------------------")
+        print("Ended the burn-in, start to save samples")
+        print("-------------------")
+        # initialize items to be filled with samples
+        mu_T = np.zeros((N_cluster, n_samples))          # first index = cluster, second index = iteration
+        mu_HR = np.zeros((N_cluster, n_samples))
+        sigma_T = np.zeros((N_cluster, n_samples))
+        sigma_HR = np.zeros((N_cluster, n_samples))
+        rho = np.zeros((N_cluster, n_samples))
+
+        for i in range(n_samples):
+            sampler.make_a_step()
+            # save the mu and the log_p of the step to reconstruct the traces
+            k_n, nu_n, mu_n, Psi_n = sampler.posterior_parameters()
+            mu_trace[i+1] = mu_n
+            log_p[burn_in+i] = sampler.state["log_joint_p"]
+            print(f"Step {sampler.state["steps_done"]} done")
+            # sample and save
+            for k in range(N_cluster):
+                Sigma_j = invwishart(nu_n[k], Psi_n[k], seed=rng).rvs()                 # sample Sigma_j from the IW
+                mu_j = multivariate_normal(mu_n[k], Sigma_j/k_n[k], seed=rng).rvs()     # sample mu_j from multi_normal
+                mu_T[k,i] = mu_j[0]
+                mu_HR[k,i] = mu_j[1]                                                    # write the two means
+                sigma_T[k,i] = np.sqrt(Sigma_j[0,0])                                    # sigma on T
+                sigma_HR[k,i] = np.sqrt(Sigma_j[1,1])                                   # sigma on HR
+                rho[k,i] = Sigma_j[0,1]/(sigma_T[k,i]*sigma_HR[k,i])                    # correlation
+    
+            print("Saved samples")
+            print("-------------------")
+
+            # maybe this can be a function of the sampler but try like this
 
         # after the running save the important parameters so we don't have to run it always
         # save vec_z assignment to cluster
@@ -216,11 +250,10 @@ if __name__ == "__main__":
         np.savetxt(main_dir+"\\Gibbs\\log_p_cluster_"+str(N_cluster)+"_step_"+str(n_step)+".txt", log_p, header="log_joint_p (cluster "+str(N_cluster)+" step "+str(n_step)+")")
         # save trace of means
         np.savez(main_dir+"\\Gibbs\\mu_trace_cluster_"+str(N_cluster)+"_step_"+str(n_step), mu_trace= mu_trace)
-        # save posterior_parameters() to have posterior of mu and sigma
-        k_n, nu_n, mu_n, Psi_n = sampler.posterior_parameters()
-        filename = main_dir+"\\Gibbs\\posterior_cluster_"+str(N_cluster)+"_step_"+str(n_step)
-        np.savez(filename, k_n = k_n, nu_n = nu_n, mu_n=mu_n, Psi_n=Psi_n)
-    
+        # save posterior samples
+        np.savez(main_dir+"\\Gibbs\\Posterior_samples_cluster_"+str(N_cluster)+"_step_"+str(n_step),
+               mu_T=mu_T, mu_HR=mu_HR, sigma_T=sigma_T, sigma_HR=sigma_HR, rho=rho)
+
     # if we are not running the sampler search the saved files
     else:
         # load the vector of assignments
@@ -230,10 +263,14 @@ if __name__ == "__main__":
         # load file of traces of mean and extract vector 
         mu_trace_file = np.load(main_dir+"\\Gibbs\\mu_trace_cluster_"+str(N_cluster)+"_step_"+str(n_step)+".npz")
         mu_trace = mu_trace_file['mu_trace']
-        # load posterior parameters and assign to their name
-        post_par = np.load(main_dir+"\\Gibbs\\posterior_cluster_"+str(N_cluster)+"_step_"+str(n_step)+".npz")
-        k_n, nu_n, mu_n, Psi_n = post_par['k_n'], post_par['nu_n'], post_par['mu_n'], post_par['Psi_n']
-        # load posterior samples (if I save directly the posterior samples I don't need the posterior parameters?)
+        # load posterior samples
+        samples_file = np.load(main_dir+"\\Gibbs\\Posterior_samples_cluster_"+str(N_cluster)+"_step_"+str(n_step)+".npz")
+        mu_T     = samples_file['mu_T']
+        mu_HR    = samples_file['mu_HR']
+        sigma_T  = samples_file['sigma_T']
+        sigma_HR = samples_file['sigma_HR']
+        rho      = samples_file['rho']
+
 
     ax1 = fig4.add_subplot(212, sharex=ax)
     for k in sampler.state["cluster_id_"]:
@@ -248,6 +285,7 @@ if __name__ == "__main__":
     fig5 = plt.figure("Joint probability trace")
     ax = fig5.add_subplot(111)
     ax.plot(log_p, '-o', color='C0', label = "Joint probability")
+    ax.axvline(burn_in, color ='r', linestyle='dashed', label='Burn-in')
     ax.set_xlabel("Steps")
     ax.set_ylabel("$\\log P$")
     plt.legend()
@@ -270,39 +308,6 @@ if __name__ == "__main__":
     ax.set_xlabel("$\\log(T_{90})$")
     ax.set_ylabel("$\\log(HR)$")
     plt.legend(handles=legend_elements)
-
-
-    # the sampler has to run > 15 times but in the meantime I want to understand the posterior
-    
-    
-    # work with cluster 0 then generalize
-    # also this can be in the part of "run", then save and load to not compute them always
-    # problem: I should sample after it converges, when does it?
-    # joint posterior should be stable!
-    n_samples = 50
-    Psi_nk = Psi_n[0]
-    nu_nk = nu_n[0]
-    mu_nk = mu_n[0]
-    k_nk = k_n[0]
-    mu_T = np.zeros(n_samples)
-    mu_HR = np.zeros(n_samples)
-    sigma_T = np.zeros(n_samples)
-    sigma_HR = np.zeros(n_samples)
-    rho = np.zeros(n_samples)
-    for ii in range(n_samples):
-        Sigma_j = invwishart(nu_nk, Psi_nk, seed=rng).rvs()                 # sample Sigma_j from the IW
-        mu_j = multivariate_normal(mu_nk, Sigma_j/k_nk, seed=rng).rvs()     # sample mu_j from multi_normal
-        mu_T[ii] = mu_j[0]
-        mu_HR[ii] = mu_j[1]                                                 # write the two means
-        sigma_T[ii] = np.sqrt(Sigma_j[0,0])                                 # sigma on T
-        sigma_HR[ii] = np.sqrt(Sigma_j[1,1])                                # sigma on HR
-        rho[ii] = Sigma_j[0,1]/(sigma_T[ii]*sigma_HR[ii])                   # correlation
-    
-    
-    np.savetxt(main_dir+"\\Gibbs\\Posterior_samples_cluster_"+str(N_cluster)+"_number_"+str(0)+"_step_"+str(n_step)+".txt",
-               np.array([mu_T, mu_HR, sigma_T, sigma_HR, rho]).T,
-               header="mu_T, mu_HR, sigma_T, sigma_HR, rho (tot cluster "+str(N_cluster)+", number "+str(0)+" step "+str(n_step)+")")
-
     
     #plt.show()
 
