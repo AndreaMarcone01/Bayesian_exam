@@ -1,9 +1,9 @@
 # Python script for point 1a: find parameters of the classification model
 
 import numpy as np
-from scipy.special import xlogy
+import math
 from pdf_analysis import errors_around_peak
-from scipy.stats import multivariate_normal, multivariate_t, invwishart, norm
+from scipy.stats import multivariate_normal, multivariate_t, invwishart
 
 def gauss(x, mu, sigma):
     """A gaussian.
@@ -20,54 +20,13 @@ def gauss(x, mu, sigma):
     pdf = 1/(np.sqrt(2 * np.pi)*sigma) * np.exp(-0.5 * ((x - mu)/sigma)**2)
     return pdf
 
-def gauss_2D(x, theta):
-    """Pdf of a 2D gaussian.
-    
-    Args:
-        x (array): multidimensional variable
-        theta (array): parameters in order [mu_x, mu_y, sigma_x, sigma_y, rho]
-        
-    Returns:
-        pdf (array): probability density function, normalized to 1
-    """
-
-    sigma_x = theta[2]
-    sigma_y = theta[3]
-    rho = theta[4]
-    cov = np.array([[sigma_x**2, rho*sigma_x*sigma_y],
-                    [rho*sigma_x*sigma_y, sigma_y**2]])
-    
-    multi = multivariate_normal(mean=np.array([theta[0], theta[1]]), cov=cov)
-    pdf = multi.pdf(x)
-    return pdf
-
-def weighted_2D_normal(x, theta):
-    """Weighted sum of two 2D normal.
-    
-    Args:
-        x (array): independent variable
-        theta (array): parameter array, in order [w, theta_1, theta_2]
-        
-    Returns:
-        total model (array): probability density function, normalized to 1
-    """
-
-    w = theta[0]
-    theta_1 = theta[1:6]
-    theta_2 = theta[6:11]
-
-    normal_1 = gauss_2D(x, theta_1)
-    normal_2 = gauss_2D(x, theta_2)
-    model = w * normal_1 + (1-w) * normal_2
-    return model
-
 class state():
     def __init__(self, N_cluster, data, mu_0, alpha, rng):
         vec_z = rng.choice(N_cluster, size=data.shape[0])
         identity = np.diag(np.full(data.shape[1],1))
                 
         # compute some suff_stats that can't be done in a line
-        bar_x_k = np.zeros((N_cluster, data.shape[1]))      # firts index 0=log_T, 1=log_HR, second index = k
+        bar_x_k = np.zeros((N_cluster, data.shape[1]))      # first index 0=log_T, 1=log_HR, second index = k
         for k in range(N_cluster):
             bar_x_k[k] = np.mean(data[vec_z == k], axis = 0)
 
@@ -95,13 +54,14 @@ class state():
                 "alpha": alpha                                          # starting alpha for dirichlet 
             },
             "alpha_0": np.full(N_cluster, alpha/N_cluster),             # first values of alpha_k
-            "vec_z": vec_z,                                             # first random assignemnt
+            "vec_z": vec_z,                                             # first random assignment
             "steps_done": 0,                                            # counter of steps done
             "suff_stats": {                                             # store the quantities to compute the posterior parameters
                 "N_k": np.array([np.sum(vec_z==k) for k in range(N_cluster)]),              # first count of points for cluster
                 "bar_x_k": bar_x_k,                                    # mean of data for cluster
                 "S_k": S_k                            # compute the scatter matrix
-            }
+            },
+            "log_joint_p": np.nan
         }
 
     def assign_new_zi(self, index):
@@ -120,7 +80,7 @@ class state():
         new_k = rng.choice(self.state["N_cluster_"], p=prob_zi)
         # re add the point removed 
         self.state["vec_z"][index] = new_k
-        self.add_suff_stats(index, new_k)
+        self.add_suff_stats(new_k)
 
     def remove_suff_stats(self,index):
         kk = self.state["vec_z"][index]
@@ -133,7 +93,7 @@ class state():
         diff = data_k - data_k.mean(axis=0)
         self.state["suff_stats"]["S_k"][kk] = diff.T @ diff
         
-    def add_suff_stats(self, ii, kk):
+    def add_suff_stats(self, kk):
         # update the suff_stats of cluster kk
         data = self.state["data_"]
         vec_z = self.state["vec_z"]
@@ -156,28 +116,29 @@ class state():
         
         return k_n, nu_n, mu_n, Psi_n
     
+    def joint_prob(self):
+        # compute the joint probability of the actual state of the sampler
+        first_term = 0
+        k_n, nu_n, mu_n, Psi_n = self.posterior_parameters()
+        for i in range(self.state["N_data_"]):
+            k = self.state["vec_z"][i]
+            first_term += multivariate_t(mu_n[k], (k_n[k]+1)/(k_n[k]*nu_n[k]) * Psi_n[k], df=nu_n[k]-2+1).logpdf(self.state["data_"][i])
+        second_term = 0
+        for k in self.state["cluster_id_"]:
+            second_term += math.lgamma(self.state["suff_stats"]["N_k"][k] + self.state["alpha_0"][k])
+        return first_term+second_term
+    
     def make_a_step(self):
         # make a step of the sampler
         for ii in range(self.state["N_data_"]):
             self.assign_new_zi(ii)
         self.state["steps_done"] += 1
+        self.state["log_joint_p"] = self.joint_prob()
+    
     """
-    # don't know if this are used
-    def count_in_cluster(self, exclude_index):
-        # count the data for cluster without point i
-        vec_z_minus_i = np.delete(self.state["vec_z"], exclude_index)   # remove point i from vec_z
-        N_k_minus_i = np.zeros(self.state["N_cluster_"])                # initialise counts once removed x_i
-        for k in range(len(N_k_minus_i)):
-            N_k_minus_i[k] = np.sum(vec_z_minus_i==k)                   # counts once removed x_i
-        return N_k_minus_i
-
-    def update_suff_stats(self, index=-1):
-        if index > -0.1:
-            data = np.delete(self.state["data_"], index)
-            vec_z = np.delete(self.state["vec_z"], index)
-        else:
-            data = self.state["data_"]
-            vec_z = self.state["vec_z"]
+    def update_suff_stats(self):
+        data = self.state["data_"]
+        vec_z = self.state["vec_z"]
         # update the suff_stats to compute the posterior parameters
         self.state["suff_stats"]["N_k"] = np.array([
             np.sum(vec_z==k) for k in self.state["cluster_id_"]])
@@ -188,11 +149,6 @@ class state():
         self.state["suff_stats"]["S_k"] = np.array([
             np.cov(data[vec_z==k], rowvar=False, bias=True) * len(data[vec_z==k])
             for k in self.state["cluster_id_"]])
-        
-    def update_alphas(self, exclude_index):
-        # find new alphas (don't know if it's used)
-        for k in self.state["cluster_id_"]:
-            self.state["alpha_k"][k] = self.state["alpha_"]/self.state["N_cluster_"] + self.count_in_cluster(exclude_index)[k]
     """
 
 if __name__ == "__main__":
@@ -205,15 +161,152 @@ if __name__ == "__main__":
     main_dir = os.path.dirname(os.path.realpath(__file__))
     log_T, d_log_T, log_HR = np.loadtxt(main_dir+"\\Data\\GRB_data.txt", unpack=True)
 
-    xx = np.linspace(-4,7,256)
-    yy = np.linspace(-2.5, 3.5, 256)
+    xx = np.linspace(-4,7,256)              # linear space on log_T
+    yy = np.linspace(-2.5, 3.5, 256)        # linear space on log_HR
     
-    par_name = ["w", "mu_1_T", "mu_1_HR", "sigma_1_T", "sigma_1_HR", "rho1", 
-              "mu_2_T", "mu_2_HR", "sigma_2_T", "sigma_2_HR", "rho2"]
-    bounds = np.array([[0,1], 
-                       [-4,7], [-2.5, 3.5], [0.01, 3], [0.01, 3], [0,1],
-                       [-4,7], [-2.5, 3.5], [0.01, 3], [0.01, 3], [-0.99,0.99]])
+    
+    # try to initialise things
+    # I have to define data so that data[ii] = [log_T[ii], log_HR[ii]] and see if it runs in 2D 
+    data = np.array([log_T, log_HR]).T          #transpose to have format (N_point, N_dim = 2)
+    
+    """
+    # 3 clusters    
+    N_cluster = 3
+    mu_0 = np.array([[-1,0],[1,0],[3.5,0]])
+    """
 
+    # 2 clusters    
+    N_cluster = 2
+    mu_0 = np.array([[-1,0],[3.5,0]])
+
+    sampler = state(N_cluster, data, mu_0=mu_0, alpha=1,rng=rng)
+    _, _, mu_start, _ = sampler.posterior_parameters()
+    cluster_color = ['g', 'orange']
+
+    fig4 = plt.figure("Initial assignment")
+    ax = fig4.add_subplot(211)
+    for k in sampler.state["cluster_id_"]:
+        data_k = sampler.state["data_"][sampler.state["vec_z"] == k]
+        ax.scatter(data_k[:,0], data_k[:,1], marker = '.', color = cluster_color[k], label = "Cluster number "+str(k))
+    ax.set_title("Initial assignment")
+    ax.set_ylabel("$\\log(HR)$")
+    plt.legend()
+
+    # run n_step times
+    run = True
+    n_step = 15     # steps of the sampler
+    mu_trace = np.zeros((n_step+1, mu_0.shape[0], mu_0.shape[1]))   # save evolutions of E[mu]
+    mu_trace[0] = mu_start                                          # save starting point of means 
+    log_p = np.zeros(n_step)                                  # save evolution of joint probability of state
+
+    if run == True:
+        for i in range(n_step):
+            sampler.make_a_step()
+            # save the mu of the step to reconstruct the traces
+            _, _, mu_n, _ = sampler.posterior_parameters()
+            mu_trace[i+1] = mu_n
+            log_p[i] = sampler.state["log_joint_p"]
+            print(f"Step {sampler.state["steps_done"]} done")
+
+        # after the running save the important parameters so we don't have to run it always
+        # save vec_z assignment to cluster
+        vec_z = sampler.state["vec_z"]
+        np.savetxt(main_dir+"\\Gibbs\\vec_z_cluster_"+str(N_cluster)+"_step_"+str(n_step)+".txt", vec_z, header="vec_z (cluster "+str(N_cluster)+" step "+str(n_step)+")")
+        # save joint probability evolution
+        np.savetxt(main_dir+"\\Gibbs\\log_p_cluster_"+str(N_cluster)+"_step_"+str(n_step)+".txt", log_p, header="log_joint_p (cluster "+str(N_cluster)+" step "+str(n_step)+")")
+        # save trace of means
+        np.savez(main_dir+"\\Gibbs\\mu_trace_cluster_"+str(N_cluster)+"_step_"+str(n_step), mu_trace= mu_trace)
+        # save posterior_parameters() to have posterior of mu and sigma
+        k_n, nu_n, mu_n, Psi_n = sampler.posterior_parameters()
+        filename = main_dir+"\\Gibbs\\posterior_cluster_"+str(N_cluster)+"_step_"+str(n_step)
+        np.savez(filename, k_n = k_n, nu_n = nu_n, mu_n=mu_n, Psi_n=Psi_n)
+    
+    # if we are not running the sampler search the saved files
+    else:
+        # load the vector of assignments
+        vec_z = np.loadtxt(main_dir+"\\Gibbs\\vec_z_cluster_"+str(N_cluster)+"_step_"+str(n_step)+".txt")
+        # load trace of joint prob 
+        log_p = np.loadtxt(main_dir+"\\Gibbs\\log_p_cluster_"+str(N_cluster)+"_step_"+str(n_step)+".txt")
+        # load file of traces of mean and extract vector 
+        mu_trace_file = np.load(main_dir+"\\Gibbs\\mu_trace_cluster_"+str(N_cluster)+"_step_"+str(n_step)+".npz")
+        mu_trace = mu_trace_file['mu_trace']
+        # load posterior parameters and assign to their name
+        post_par = np.load(main_dir+"\\Gibbs\\posterior_cluster_"+str(N_cluster)+"_step_"+str(n_step)+".npz")
+        k_n, nu_n, mu_n, Psi_n = post_par['k_n'], post_par['nu_n'], post_par['mu_n'], post_par['Psi_n']
+        # load posterior samples (if I save directly the posterior samples I don't need the posterior parameters?)
+
+    ax1 = fig4.add_subplot(212, sharex=ax)
+    for k in sampler.state["cluster_id_"]:
+        data_k = sampler.state["data_"][vec_z == k]
+        ax1.scatter(data_k[:,0], data_k[:,1], marker = '.', color = cluster_color[k], label = "Cluster number "+str(k))
+    ax1.set_title("After "+str(n_step)+" step")
+    ax1.set_xlabel("$\\log(T_{90})$")
+    ax1.set_ylabel("$\\log(HR)$")
+    plt.legend()
+    plt.tight_layout()
+
+    fig5 = plt.figure("Joint probability trace")
+    ax = fig5.add_subplot(111)
+    ax.plot(log_p, '-o', color='C0', label = "Joint probability")
+    ax.set_xlabel("Steps")
+    ax.set_ylabel("$\\log P$")
+    plt.legend()
+    plt.show()
+    exit()
+
+    fig5 = plt.figure("Mean trace")
+    ax = fig5.add_subplot(111)
+    for k in sampler.state["cluster_id_"]:
+        mu_k = mu_trace[:,k,:]
+        ax.plot(mu_k[:,0], mu_k[:,1], '-o', color = cluster_color[k])
+        ax.plot(mu_k[0,0], mu_k[0,1], 'o', color = cluster_color[k], mec='b')
+        ax.plot(mu_k[-1,0], mu_k[-1,1], 'o', color = cluster_color[k], mec='r')
+    legend_elements = [
+        Line2D([0], [0], marker = 'o', color=cluster_color[0], label = "Mean cluster 0"),
+        Line2D([0], [0], marker = 'o', color=cluster_color[1], label = "Mean cluster 1"),
+        Line2D([0], [0], linewidth=0, marker = 'o', mfc='w', mec = 'b', label = "Starting means"),
+        Line2D([0], [0], linewidth=0, marker = 'o', mfc='w', mec = 'r', label = "Ending means"),] 
+    ax.set_title("Means traces")
+    ax.set_xlabel("$\\log(T_{90})$")
+    ax.set_ylabel("$\\log(HR)$")
+    plt.legend(handles=legend_elements)
+
+
+    # the sampler has to run > 15 times but in the meantime I want to understand the posterior
+    
+    
+    # work with cluster 0 then generalize
+    # also this can be in the part of "run", then save and load to not compute them always
+    # problem: I should sample after it converges, when does it?
+    # joint posterior should be stable!
+    n_samples = 50
+    Psi_nk = Psi_n[0]
+    nu_nk = nu_n[0]
+    mu_nk = mu_n[0]
+    k_nk = k_n[0]
+    mu_T = np.zeros(n_samples)
+    mu_HR = np.zeros(n_samples)
+    sigma_T = np.zeros(n_samples)
+    sigma_HR = np.zeros(n_samples)
+    rho = np.zeros(n_samples)
+    for ii in range(n_samples):
+        Sigma_j = invwishart(nu_nk, Psi_nk, seed=rng).rvs()                 # sample Sigma_j from the IW
+        mu_j = multivariate_normal(mu_nk, Sigma_j/k_nk, seed=rng).rvs()     # sample mu_j from multi_normal
+        mu_T[ii] = mu_j[0]
+        mu_HR[ii] = mu_j[1]                                                 # write the two means
+        sigma_T[ii] = np.sqrt(Sigma_j[0,0])                                 # sigma on T
+        sigma_HR[ii] = np.sqrt(Sigma_j[1,1])                                # sigma on HR
+        rho[ii] = Sigma_j[0,1]/(sigma_T[ii]*sigma_HR[ii])                   # correlation
+    
+    
+    np.savetxt(main_dir+"\\Gibbs\\Posterior_samples_cluster_"+str(N_cluster)+"_number_"+str(0)+"_step_"+str(n_step)+".txt",
+               np.array([mu_T, mu_HR, sigma_T, sigma_HR, rho]).T,
+               header="mu_T, mu_HR, sigma_T, sigma_HR, rho (tot cluster "+str(N_cluster)+", number "+str(0)+" step "+str(n_step)+")")
+
+    
+    #plt.show()
+
+    # some code here could be useful for 2D plot
     """
     fig = plt.figure(1)
     ax  = fig.add_subplot(111)
@@ -249,6 +342,7 @@ if __name__ == "__main__":
     plt.show()
     """
 
+    # some code here could be important to visualize the marginalize classification
     """
     # try to use this to verify algorithm on log_T that I already know the results
     initial_state = state(2, log_T, 1, rng)
@@ -287,137 +381,4 @@ if __name__ == "__main__":
     ax1.set_ylabel("Counts")
     plt.legend()
     plt.tight_layout()
-
-    # thinked it would do better but no problem. Let's see the parameters
-    k_n, nu_n, mu_n, Psi_n = initial_state.posterior_parameters()
-    cov = [Psi_n[i]/(nu_n[i] - 1 - 1) for i in range(len(k_n))]
-    print(f"The means are {mu_n}")                  # The means are [-0.0444695   3.60561329]
-    print(f"And the covariancies {cov}")            # And the covariancies [2.1759942246549575, 0.8944213457721013]
-    plt.show()
     """
-
-    # try to initialise things
-    # I have to define data so that data[ii] = [log_T[ii], log_HR[ii]] and see if it runs in 2D 
-    data = np.array([log_T, log_HR]).T          #transpose to have format (N_point, N_dim = 2)
-    
-    """
-    # 3 clusters    
-    N_cluster = 3
-    mu_0 = np.array([[-1,0],[1,0],[3.5,0]])
-    """
-
-    # 2 clusters    
-    N_cluster = 2
-    mu_0 = np.array([[-1,0],[3.5,0]])
-
-    sampler = state(N_cluster, data, mu_0=mu_0, alpha=1,rng=rng)
-    _, _, mu_start, _ = sampler.posterior_parameters()
-    cluster_color = ['g', 'orange']
-
-    fig4 = plt.figure("Initial assignment")
-    ax = fig4.add_subplot(211)
-    for k in sampler.state["cluster_id_"]:
-        data_k = sampler.state["data_"][sampler.state["vec_z"] == k]
-        ax.scatter(data_k[:,0], data_k[:,1], marker = '.', color = cluster_color[k], label = "Cluster number "+str(k))
-    ax.set_title("Initial assignment")
-    ax.set_ylabel("$\\log(HR)$")
-    plt.legend()
-
-    # run n_step times
-    run = False
-    n_step = 15
-    mu_trace = np.zeros((n_step+1, mu_0.shape[0], mu_0.shape[1]))
-    mu_trace[0] = mu_start
-    if run == True:
-        for i in range(n_step):
-            sampler.make_a_step()
-            # save the mu of the step to reconstruct the traces
-            _, _, mu_n, _ = sampler.posterior_parameters()
-            mu_trace[i+1] = mu_n
-            print(f"Step {sampler.state["steps_done"]} done")
-
-        # after the running save the important parameters so we don't have to run it always
-    
-        # save vec_z assigniment to cluster
-        vec_z = sampler.state["vec_z"]
-        np.savetxt(main_dir+"\\Gibbs\\vec_z_cluster_"+str(N_cluster)+"_step_"+str(n_step)+".txt", vec_z, header="vec_z (cluster "+str(N_cluster)+" step "+str(n_step)+")")
-
-        # save trace of means
-        np.savez(main_dir+"\\Gibbs\\mu_trace_cluster_"+str(N_cluster)+"_step_"+str(n_step), mu_trace= mu_trace)
-        
-        # save posterior_parameters() to have posterior of mu and sigma
-        k_n, nu_n, mu_n, Psi_n = sampler.posterior_parameters()
-        filename = main_dir+"\\Gibbs\\posterior_cluster_"+str(N_cluster)+"_step_"+str(n_step)
-        np.savez(filename, k_n = k_n, nu_n = nu_n, mu_n=mu_n, Psi_n=Psi_n)
-    
-    # if we are not running the sampler search the saved files
-    else:
-        vec_z = np.loadtxt(main_dir+"\\Gibbs\\vec_z_cluster_"+str(N_cluster)+"_step_"+str(n_step)+".txt")
-        mu_trace_file = np.load(main_dir+"\\Gibbs\\mu_trace_cluster_"+str(N_cluster)+"_step_"+str(n_step)+".npz")
-        mu_trace = mu_trace_file['mu_trace']
-        post_par = np.load(main_dir+"\\Gibbs\\posterior_cluster_"+str(N_cluster)+"_step_"+str(n_step)+".npz")
-        k_n = post_par['k_n']
-        nu_n = post_par['nu_n']
-        mu_n = post_par['mu_n']
-        Psi_n = post_par['Psi_n']
-
-    ax1 = fig4.add_subplot(212, sharex=ax)
-    for k in sampler.state["cluster_id_"]:
-        data_k = sampler.state["data_"][vec_z == k]
-        ax1.scatter(data_k[:,0], data_k[:,1], marker = '.', color = cluster_color[k], label = "Cluster number "+str(k))
-    ax1.set_title("After "+str(n_step)+" step")
-    ax1.set_xlabel("$\\log(T_{90})$")
-    ax1.set_ylabel("$\\log(HR)$")
-    plt.legend()
-    plt.tight_layout()
-
-    fig5 = plt.figure("Mean trace")
-    ax = fig5.add_subplot(111)
-    for k in sampler.state["cluster_id_"]:
-        mu_k = mu_trace[:,k,:]
-        ax.plot(mu_k[:,0], mu_k[:,1], '-o', color = cluster_color[k])
-        ax.plot(mu_k[0,0], mu_k[0,1], 'o', color = cluster_color[k], mec='b')
-        ax.plot(mu_k[-1,0], mu_k[-1,1], 'o', color = cluster_color[k], mec='r')
-    legend_elements = [
-        Line2D([0], [0], marker = 'o', color=cluster_color[0], label = "Mean cluster 0"),
-        Line2D([0], [0], marker = 'o', color=cluster_color[1], label = "Mean cluster 1"),
-        Line2D([0], [0], linewidth=0, marker = 'o', mfc='w', mec = 'b', label = "Starting means"),
-        Line2D([0], [0], linewidth=0, marker = 'o', mfc='w', mec = 'r', label = "Ending means"),] 
-    ax.set_title("Means traces")
-    ax.set_xlabel("$\\log(T_{90})$")
-    ax.set_ylabel("$\\log(HR)$")
-    plt.legend(handles=legend_elements)
-
-
-    # the sampler has to run > 15 times but in the meantime I want to understand the posterior
-    
-    # sample Sigma_j from the IW
-    # work with cluster 0 then generalize
-    n_samples = 50
-    Psi_nk = Psi_n[0]
-    nu_nk = nu_n[0]
-    mu_nk = mu_n[0]
-    k_nk = k_n[0]
-    mu_T = np.zeros(n_samples)
-    mu_HR = np.zeros(n_samples)
-    sigma_T = np.zeros(n_samples)
-    sigma_HR = np.zeros(n_samples)
-    rho = np.zeros(n_samples)
-    for ii in range(n_samples):
-        Sigma_j = invwishart(nu_nk, Psi_nk, seed=rng).rvs()
-        mu_j = multivariate_normal(mu_nk, Sigma_j/k_nk, seed=rng).rvs()
-        mu_T[ii] = mu_j[0]
-        mu_HR[ii] = mu_j[1]
-        sigma_T[ii] = np.sqrt(Sigma_j[0,0])
-        sigma_HR[ii] = np.sqrt(Sigma_j[1,1])
-        rho[ii] = Sigma_j[0,1]/(sigma_T[ii]*sigma_HR[ii])
-    
-    
-    np.savetxt(main_dir+"\\Gibbs\\Posterior_samples_cluster_"+str(N_cluster)+"_number_"+str(0)+"_step_"+str(n_step)+".txt",
-               np.array([mu_T, mu_HR, sigma_T, sigma_HR, rho]).T,
-               header="mu_T, mu_HR, sigma_T, sigma_HR, rho (tot cluster "+str(N_cluster)+", number "+str(0)+" step "+str(n_step)+")")
-
-
-    
-    
-    #plt.show()
