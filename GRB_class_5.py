@@ -109,7 +109,9 @@ class state():
         suff = self.state["suff_stats"]
         k_n = hyper["k_0"] + suff["N_k"]
         nu_n = hyper["nu_0"] + suff["N_k"]
-        mu_n = (hyper["k_0"] * hyper["mu_0"] + suff["N_k"] * suff["bar_x_k"])/k_n
+        mu_n = np.zeros(hyper["mu_0"].shape)
+        for k in self.state["cluster_id_"]:
+            mu_n[k] = (hyper["k_0"][k] * hyper["mu_0"][k] + suff["N_k"][k] * suff["bar_x_k"][k])/k_n[k]
         Psi_n = np.zeros(suff["S_k"].shape)
         for k in self.state["cluster_id_"]:
             Psi_n[k] = hyper["Psi_0"][k] + suff["S_k"][k] + hyper["k_0"][k]/k_n[k] * suff["N_k"][k] * np.outer((suff["bar_x_k"][k] - hyper["mu_0"][k]), (suff["bar_x_k"][k] - hyper["mu_0"][k]))
@@ -151,6 +153,27 @@ class state():
             for k in self.state["cluster_id_"]])
     """
 
+def autocorrelation(x, norm = True):
+    """Find the autocorrelation of x
+    
+    Args:
+        x (array): array on which compute the autocorrelation
+        norm (boolean): decide if normalize or not, default to True
+        
+    Returns:
+        autocorr (array): array of autocorrelation
+    """
+
+    f = np.fft.fft(x - np.mean(x), n = 2*len(x))
+    f_con = np.conjugate(f)
+    corr = np.real(np.fft.ifft(f * f_con)[:len(x)])
+
+    if norm == True:
+        corr /= corr[0]
+        
+    return corr
+
+
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     from matplotlib.lines import Line2D
@@ -169,19 +192,20 @@ if __name__ == "__main__":
     # I have to define data so that data[ii] = [log_T[ii], log_HR[ii]] and see if it runs in 2D 
     data = np.array([log_T, log_HR]).T          #transpose to have format (N_point, N_dim = 2)
     
-    """
+    
     # 3 clusters    
     N_cluster = 3
     mu_0 = np.array([[-1,0],[1,0],[3.5,0]])
+    cluster_color = ['g', 'purple', 'orange']
     """
 
     # 2 clusters    
     N_cluster = 2
     mu_0 = np.array([[-1,0],[3.5,0]])
-
+    cluster_color = ['g', 'orange']
+    """
     sampler = state(N_cluster, data, mu_0=mu_0, alpha=1,rng=rng)
     _, _, mu_start, _ = sampler.posterior_parameters()
-    cluster_color = ['g', 'orange']
 
     fig4 = plt.figure("Initial assignment")
     ax = fig4.add_subplot(211)
@@ -194,8 +218,8 @@ if __name__ == "__main__":
 
     # run n_step times
     run = True
-    burn_in = 6
-    n_samples = 15     # steps of the sampler
+    burn_in = 10
+    n_samples = 100     # steps of the sampler
     n_step = burn_in+n_samples
     mu_trace = np.zeros((n_samples+1, mu_0.shape[0], mu_0.shape[1]))   # save evolutions of E[mu]
     mu_trace[0] = mu_start                                          # save starting point of means 
@@ -270,8 +294,9 @@ if __name__ == "__main__":
         sigma_T  = samples_file['sigma_T']
         sigma_HR = samples_file['sigma_HR']
         rho      = samples_file['rho']
+        print("Loaded the results of sampler (with "+str(N_cluster)+" clusters and "+str(n_step)+" step)")
 
-
+    # look at the final assignemts for points 
     ax1 = fig4.add_subplot(212, sharex=ax)
     for k in sampler.state["cluster_id_"]:
         data_k = sampler.state["data_"][vec_z == k]
@@ -282,16 +307,19 @@ if __name__ == "__main__":
     plt.legend()
     plt.tight_layout()
 
+    # plot the joint probability and check good burn-in
     fig5 = plt.figure("Joint probability trace")
     ax = fig5.add_subplot(111)
     ax.plot(log_p, '-o', color='C0', label = "Joint probability")
     ax.axvline(burn_in, color ='r', linestyle='dashed', label='Burn-in')
     ax.set_xlabel("Steps")
+    from matplotlib.ticker import MaxNLocator
+    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
     ax.set_ylabel("$\\log P$")
     plt.legend()
-    plt.show()
-    exit()
 
+    """
+    # I like this but maybe not really useful 
     fig5 = plt.figure("Mean trace")
     ax = fig5.add_subplot(111)
     for k in sampler.state["cluster_id_"]:
@@ -308,8 +336,134 @@ if __name__ == "__main__":
     ax.set_xlabel("$\\log(T_{90})$")
     ax.set_ylabel("$\\log(HR)$")
     plt.legend(handles=legend_elements)
+    """
+
+    par_name = ["mu_T", "sigma_T", "mu_HR", "sigma_HR", "rho"]
+    thinning = 5
+    # autocorrelation for each set of parameters
+    fig6 = plt.figure("Parameters autocorrelation ("+str(N_cluster)+" clusters)", figsize = (6,6))
+    for k in range(N_cluster):
+        parameters = [mu_T[k], sigma_T[k], mu_HR[k], sigma_HR[k], rho[k]]
+        for i in range(len(parameters)):
+            ax = fig6.add_subplot(5, N_cluster, k+N_cluster*i+1)
+            if k+N_cluster*i == np.arange(N_cluster)[k]:
+                ax.set_title("Cluster "+str(k))
+            ax.plot(autocorrelation(parameters[i]), '.', color = 'C0', label = 'Autocorrelation')
+            ax.axvline(thinning, color='r', linestyle = 'dashed', label = 'Thinning')
+            ax.set_ylabel(par_name[i])
+    ax.set_xlabel("Iteration")
+    plt.tight_layout()
+
+    # thinning the samples    
+    par_mu_T = mu_T[:,::thinning]
+    par_sigma_T = sigma_T[:,::thinning]
+    par_mu_HR = mu_HR[:,::thinning]
+    par_sigma_HR = sigma_HR[:,::thinning]
+    par_rho = rho[:,::thinning]
     
-    #plt.show()
+    print(f"After burn-in and thinning we have {len(par_mu_T[0,:])} samples")
+    
+    # find peaks and credible interval
+    par_val = np.zeros((N_cluster,len(par_name)))
+    d_par_plus = np.zeros((N_cluster,len(par_name)))
+    d_par_minus = np.zeros((N_cluster,len(par_name)))
+    for k in range(N_cluster):
+        parameters = [par_mu_T[k], par_sigma_T[k], par_mu_HR[k], par_sigma_HR[k], par_rho[k]]
+        for i in range(len(par_name)):
+            counts_i, bins_i = np.histogram(parameters[i], bins = 30, density=True)
+            center_i = 0.5*(bins_i[1:] + bins_i[:-1])
+            par_val[k,i], d_par_plus[k,i], d_par_minus[k,i] = errors_around_peak(center_i, counts_i)
+
+    # histogram of the parameters
+    for k in range(N_cluster):
+        parameters = [par_mu_T[k], par_sigma_T[k], par_mu_HR[k], par_sigma_HR[k], par_rho[k]]
+        fig7 = plt.figure("Parameters histogram (cluster "+str(k)+")", figsize = (6,6))
+        for i in range(len(par_name)):
+            ax = fig7.add_subplot(3, 2, i+1)
+            counts_i, bins_i = np.histogram(parameters[i], bins = 30, density=True)
+            ax.stairs(counts_i, bins_i, color = 'C0', linewidth = 1.5, baseline=0)
+            ax.axvline(par_val[k,i], color = 'green', linestyle='dashed')
+            ax.axvline(par_val[k,i]+d_par_plus[k,i], color = 'orange', linestyle='dashed')
+            ax.axvline(par_val[k,i]-d_par_minus[k,i], color = 'orange', linestyle='dashed')
+            ax.set_xlabel(par_name[i])
+            delta = 2*np.diff(bins_i)[0]
+            ax.set_xlim(np.min(bins_i)-delta, np.max(bins_i)+delta)
+            ax.set_ylim(0, np.max(counts_i) * 1.1)
+
+        ax_leg = fig7.add_subplot(3,2,6)
+        legend_elements = [
+            Line2D([0], [0], color='C0', linewidth=1.5, label='Marginalised posterior samples'),
+            Line2D([0], [0], color='r', linestyle='dashed', label='Prior'),
+            Line2D([0], [0], color='green', linestyle='dashed', label='Median value'),
+            Line2D([0], [0], color='orange', linestyle='dashed', label='Median value $\\pm\\sigma$'),]
+        ax_leg.legend(handles=legend_elements, loc='center')
+        ax_leg.axis('off')  # Hide axes, ticks, spines and background
+        
+        # rename the fig to save them later
+        if k==0:
+            fig_hist_par_0 = fig7
+        if k==1:
+            fig_hist_par_1 = fig7
+        if k==2:
+            fig_hist_par_2 = fig7
+    plt.tight_layout()
+
+    # confidence levels in the plane
+    from matplotlib.patches import Ellipse
+    scale = 2       # how many sigmas we want to represent? scale = 2 has ~68% of data 
+
+    fig8 = plt.figure("Clusters in plane log_T, log_HR")
+    ax = fig8.add_subplot(111)
+    for k in range(N_cluster):
+        data_k = sampler.state["data_"][vec_z == k]
+        ax.scatter(data_k[:,0], data_k[:,1], marker = '.', color = cluster_color[k], label = "Cluster number "+str(k), zorder = -1, alpha=0.25)
+        for i in range(len(par_mu_T[0,:])):
+            center = np.array([par_mu_T[k,i], par_mu_HR[k,i]])
+            Sigma = np.array([[par_sigma_T[k,i]**2, par_rho[k,i]*par_sigma_T[k,i]*par_sigma_HR[k,i]],
+                              [par_rho[k,i]*par_sigma_T[k,i]*par_sigma_HR[k,i], par_sigma_HR[k,i]**2]])
+            eigval, eigvec = np.linalg.eigh(Sigma)
+            angle = np.arctan2(eigvec[1,1], eigvec[0,1]) * 180/np.pi    # rotation angle
+            width = scale*2*np.sqrt(eigval[-1])                               # major axis
+            height = scale*2*np.sqrt(eigval[0])                               # minor axis
+            ellipse = Ellipse(xy=center, width=width, height=height, angle=angle, fill=False, color=cluster_color[k], alpha=0.5)
+            ax.add_patch(ellipse)
+    ax.set_xlabel("$\\log(T_{90})$")
+    ax.set_ylabel("$\\log(HR)$")
+    plt.legend()        
+
+    # plane assignments and marginals
+    # define the bins
+    bins_T = np.linspace(-4, 7, 51)
+    width_T = np.diff(bins_T)[0]
+    center_T = 0.5*(bins_T[1:] + bins_T[:-1])
+    bottom_T = np.zeros(50, dtype=int)
+
+    bins_HR = np.linspace(-2.5, 3.5, 51)
+    width_HR = np.diff(bins_HR)[0]
+    center_HR = 0.5*(bins_HR[1:] + bins_HR[:-1])
+    bottom_HR = np.zeros(50, dtype=int)
+
+    # make the plot
+    fig9 = plt.figure("logT-logHR plane and marginals")
+    ax  = fig9.add_subplot(2,2,3)
+    axT = fig9.add_subplot(2,2,1, sharex = ax)
+    axH = fig9.add_subplot(2,2,4, sharey = ax)
+    for k in sampler.state["cluster_id_"]:
+        data_k = sampler.state["data_"][vec_z == k]
+        ax.scatter(data_k[:,0], data_k[:,1], marker = '.', color = cluster_color[k], label = "Cluster number "+str(k))
+        count, _ = np.histogram(data_k[:,0], bins_T)
+        axT.bar(center_T, count, width_T, color = cluster_color[k], label = "Cluster number "+str(k), bottom=bottom_T)
+        bottom_T += count
+        count, _ = np.histogram(data_k[:,1], bins_HR)
+        axH.barh(center_HR, count, width_HR, color = cluster_color[k], label = "Cluster number "+str(k), left=bottom_HR)
+        bottom_HR += count
+    
+    ax.set_xlabel("$\\log(T_{90})$")
+    ax.set_ylabel("$\\log(HR)$")
+    plt.tight_layout()
+
+    plt.show()
+    
 
     # some code here could be useful for 2D plot
     """
@@ -327,16 +481,7 @@ if __name__ == "__main__":
     plt.ylabel("$\\log(HR)$")
     plt.tight_layout()
     
-    fig1 = plt.figure("logT-logHR plane and marginals")
-    ax = fig1.add_subplot(2,2,3)
-    axT = fig1.add_subplot(2,2,1, sharex = ax)
-    axH = fig1.add_subplot(2,2,4, sharey = ax)
-    axT.hist(log_T, bins=50)
-    axH.hist(log_HR, bins=50, orientation="horizontal")
-    ax.scatter(log_T, log_HR, marker = '.', label = 'Data')
-    ax.set_xlabel("$\\log(T_{90})$")
-    ax.set_ylabel("$\\log(HR)$")
-    plt.tight_layout()
+    
     
     fig2 = plt.figure("HR distribution with short/long")
     plt.hist(log_HR[log_T<1.67], bins = 30, color='g', label='Short GRB', fill = False, histtype='step')
