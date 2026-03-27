@@ -192,7 +192,7 @@ if __name__ == "__main__":
     # I have to define data so that data[ii] = [log_T[ii], log_HR[ii]] and see if it runs in 2D 
     data = np.array([log_T, log_HR]).T          #transpose to have format (N_point, N_dim = 2)
     
-    
+    """
     # 3 clusters    
     N_cluster = 3
     mu_0 = np.array([[-1,0],[1,0],[3.5,0]])
@@ -203,7 +203,7 @@ if __name__ == "__main__":
     N_cluster = 2
     mu_0 = np.array([[-1,0],[3.5,0]])
     cluster_color = ['g', 'orange']
-    """
+    
     sampler = state(N_cluster, data, mu_0=mu_0, alpha=1,rng=rng)
     _, _, mu_start, _ = sampler.posterior_parameters()
 
@@ -218,8 +218,8 @@ if __name__ == "__main__":
 
     # run n_step times
     run = True
-    burn_in = 10
-    n_samples = 100     # steps of the sampler
+    burn_in = 50
+    n_samples = 5000     # steps of the sampler
     n_step = burn_in+n_samples
     mu_trace = np.zeros((n_samples+1, mu_0.shape[0], mu_0.shape[1]))   # save evolutions of E[mu]
     mu_trace[0] = mu_start                                          # save starting point of means 
@@ -250,7 +250,6 @@ if __name__ == "__main__":
             k_n, nu_n, mu_n, Psi_n = sampler.posterior_parameters()
             mu_trace[i+1] = mu_n
             log_p[burn_in+i] = sampler.state["log_joint_p"]
-            print(f"Step {sampler.state["steps_done"]} done")
             # sample and save
             for k in range(N_cluster):
                 Sigma_j = invwishart(nu_n[k], Psi_n[k], seed=rng).rvs()                 # sample Sigma_j from the IW
@@ -260,9 +259,9 @@ if __name__ == "__main__":
                 sigma_T[k,i] = np.sqrt(Sigma_j[0,0])                                    # sigma on T
                 sigma_HR[k,i] = np.sqrt(Sigma_j[1,1])                                   # sigma on HR
                 rho[k,i] = Sigma_j[0,1]/(sigma_T[k,i]*sigma_HR[k,i])                    # correlation
-    
-            print("Saved samples")
-            print("-------------------")
+
+            if sampler.state["steps_done"]/50 == np.floor(sampler.state["steps_done"]/50):
+                print(f"Step {sampler.state["steps_done"]} done") # print only every 50 steps
 
             # maybe this can be a function of the sampler but try like this
 
@@ -339,7 +338,7 @@ if __name__ == "__main__":
     """
 
     par_name = ["mu_T", "sigma_T", "mu_HR", "sigma_HR", "rho"]
-    thinning = 5
+    thinning = 20
     # autocorrelation for each set of parameters
     fig6 = plt.figure("Parameters autocorrelation ("+str(N_cluster)+" clusters)", figsize = (6,6))
     for k in range(N_cluster):
@@ -398,6 +397,7 @@ if __name__ == "__main__":
             Line2D([0], [0], color='orange', linestyle='dashed', label='Median value $\\pm\\sigma$'),]
         ax_leg.legend(handles=legend_elements, loc='center')
         ax_leg.axis('off')  # Hide axes, ticks, spines and background
+        plt.tight_layout()
         
         # rename the fig to save them later
         if k==0:
@@ -406,7 +406,6 @@ if __name__ == "__main__":
             fig_hist_par_1 = fig7
         if k==2:
             fig_hist_par_2 = fig7
-    plt.tight_layout()
 
     # confidence levels in the plane
     from matplotlib.patches import Ellipse
@@ -425,7 +424,7 @@ if __name__ == "__main__":
             angle = np.arctan2(eigvec[1,1], eigvec[0,1]) * 180/np.pi    # rotation angle
             width = scale*2*np.sqrt(eigval[-1])                               # major axis
             height = scale*2*np.sqrt(eigval[0])                               # minor axis
-            ellipse = Ellipse(xy=center, width=width, height=height, angle=angle, fill=False, color=cluster_color[k], alpha=0.5)
+            ellipse = Ellipse(xy=center, width=width, height=height, angle=angle, fill=False, color=cluster_color[k], alpha=0.15)
             ax.add_patch(ellipse)
     ax.set_xlabel("$\\log(T_{90})$")
     ax.set_ylabel("$\\log(HR)$")
