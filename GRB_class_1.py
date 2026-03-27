@@ -240,19 +240,21 @@ if __name__ == "__main__":
 
     """
     # plot the data
-    plt.figure("Data and model")
-    plt.stairs(counts, edges, color = 'C0', label = 'Data', linewidth=1.5)
-    plt.xlabel("$\\log(T_{90})$")
-    plt.ylabel("Counts")
-    plt.legend()
-    plt.savefig(main_dir+"\\Results\\Data.png", dpi = 600)
+    fig0 = plt.figure("Data and model")
+    ax = fig0.add_subplot(111)
+    ax.stairs(counts, edges, color = 'C0', label = 'Data', linewidth=1.5)
+    ax.set_xlabel("$\\log(T_{90})$")
+    ax.set_ylabel("Counts")
+    ax.grid(linestyle = 'dashed')
+    ax.set_axisbelow(True)
+    fig0.legend()
+    fig0.savefig(main_dir+"\\Results\\Data.png", dpi = 600)
     plt.show()
     exit()
     """
 
     # try to initialise things
-        
-    run = True
+    run = False
     prep_run = True
     save = False
 
@@ -285,7 +287,6 @@ if __name__ == "__main__":
     for i in range(samples.shape[1]):
         ax = fig1.add_subplot(5, 1, i+1)
         ax.plot(samples[:,i], '.', color = 'C0')
-        ax.axhline(theta_0[i], color = 'orange', label = 'Initial value', linestyle = 'dashed')
         ax.set_ylabel(par_name[i])
     ax.set_xlabel("Iteration")
     plt.tight_layout()
@@ -295,23 +296,24 @@ if __name__ == "__main__":
     for i in range(samples.shape[1]):
         ax = fig2.add_subplot(5, 1, i+1)
         ax.plot(samples[:,i], '.', color = 'C0')
-        ax.axhline(theta_0[i], color = 'orange', label = 'Initial value', linestyle = 'dashed')
-        ax.axvline(burnin, color = 'r', label = 'Proposed burn-in', linestyle = 'dashed')
-        ax.set_xlim(-50, 2*burnin)
+        ax.axvline(burnin, color = 'r', label = 'Burn-in', linestyle = 'dashed')
+        ax.set_xlim(-10, 2*burnin)
         ax.set_ylabel(par_name[i])
     ax.set_xlabel("Iteration")
     plt.tight_layout()
 
-    """
-    fig = plt.figure("Chain posterior")
-    ax = fig.add_subplot(111)
+    
+    fig_post = plt.figure("Chain posterior")
+    ax = fig_post.add_subplot(111)
     ax.plot(logP, label = 'log Posterior')
-    ax.axvline(400, color = 'r', label = 'Proposed burn-in', linestyle = 'dashed')
-    #ax.axhline(np.percentile(logP, 0.9), color = 'r', label = "50 percentile", linestyle='dashed')
-    ax.set_ylabel("log posterior")
+    ax.axvline(burnin, color = 'r', label = 'Burn-in', linestyle = 'dashed')
+    ax.set_xlim(-10, 2*burnin)
+    ax.set_ylabel("log Posterior")
     ax.set_xlabel("Iteration")
+    ax.grid(linestyle = 'dashed')
+    ax.set_axisbelow(True)
     plt.legend()
-    """
+    
     
     # look at autocorrelation for theta
     fig3 = plt.figure("Parameters autocorrelation", figsize = (6,6))
@@ -329,7 +331,7 @@ if __name__ == "__main__":
         ax.plot(autocorrelation(samples[:,i]), '.', color = 'C0', label = 'Autocorrelation')
         ax.axvline(thinning, color = 'r', label = 'Proposed thinning', linestyle = 'dashed')
         ax.set_ylabel(par_name[i])
-        ax.set_xlim(-50, 2 * thinning)
+        ax.set_xlim(-10, 2 * thinning)
     ax.set_xlabel("Iteration")
     plt.tight_layout()
     
@@ -395,31 +397,34 @@ if __name__ == "__main__":
 
     # plot the data with the best fit
     fig6 = plt.figure("Data and model")
-    plt.stairs(hist, edges, color = 'C0', label = 'Data')
-    plt.plot(xx, pdf, 'r', label = "Model")
-    plt.fill_between(xx, h, l, facecolor='tomato', alpha = 0.5)
-    plt.plot(xx, w_normal_1, 'g', label = "Norm 1", alpha = 0.5)
-    plt.plot(xx, w_normal_2, color = 'orange', label = "Norm 2", alpha = 0.5)
-    plt.xlabel("$\\log(T_{90})$")
-    plt.ylabel("Normalized Counts")
-    plt.ylim([0,0.395])
+    ax = fig6.add_subplot(111)
+    ax.stairs(hist, edges, color = 'C0', label = 'Data')
+    ax.plot(xx, pdf, 'r', label = "Model", zorder = 4)
+    ax.fill_between(xx, h, l, facecolor='tomato', alpha = 0.5)
+    ax.plot(xx, w_normal_1, 'g', label = "Norm 1", alpha = 0.5)
+    ax.plot(xx, w_normal_2, color = 'orange', label = "Norm 2", alpha = 0.5)
+    ax.set_xlabel("$\\log(T_{90})$")
+    ax.set_ylabel("Normalized Counts")
+    ax.set_ylim([0,0.395])
+    ax.grid(linestyle = 'dashed')
+    ax.set_axisbelow(True)
     plt.legend()
-    plt.grid(linestyle = 'dashed')
     
     # end of first point: show, save or close all the open figures
     """
     fig1.savefig(main_dir+"\\Results\\1a\\Parameters_chain.png", dpi = 600)
     fig2.savefig(main_dir+"\\Results\\1a\\Parameters_chain_zoom.png", dpi = 600)
+    fig_post.savefig(main_dir+"\\Results\\1a\\Posterior_chain_zoom.png", dpi = 600)
     fig3.savefig(main_dir+"\\Results\\1a\\Parameters_autocorr.png", dpi = 600)
     fig4.savefig(main_dir+"\\Results\\1a\\Parameters_autocorr_zoom.png", dpi = 600)
     fig5.savefig(main_dir+"\\Results\\1a\\Parameters_hist.png", dpi = 600)
     fig6.savefig(main_dir+"\\Results\\1a\\Data_and_model.png", dpi = 600)
-
+    
     header = "par_val d_par_plus d_par_minus"
     np.savetxt(main_dir+"\\Results\\1a\\parameters_values.txt", np.array([par_val, d_par_plus, d_par_minus]).T, header=header)
 
     header = "model w_normal_1 w_normal_2"
     np.savetxt(main_dir+"\\Results\\1a\\model_values.txt", np.array([pdf, w_normal_1, w_normal_2]).T, header=header)
     """
-    plt.show()
+    #plt.show()
     #plt.close('all')

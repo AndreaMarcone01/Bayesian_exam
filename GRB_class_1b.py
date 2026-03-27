@@ -1,4 +1,4 @@
-# Python script for point 1b: find parameters of the classification model with uncretanties on the measures
+# Python script for point 1b: find parameters of the classification model with uncertainties on the measures
 
 import numpy as np
 from scipy.special import xlogy
@@ -237,7 +237,7 @@ if __name__ == "__main__":
     xx = np.linspace(-4,7,256)
     dx = np.diff(xx)[0]
 
-    # build data with uncertanties
+    # build data with uncertainties
     data = np.zeros(len(xx))
     for i in range(len(log_T90)):
         data = data + gauss(xx, log_T90[i], d_log_T90[i]) * dx
@@ -245,17 +245,18 @@ if __name__ == "__main__":
     data_n = data/(np.sum(data) * dx)               # normalize to have area 1 (for plots)
     
     # plot the data
-    plt.figure("Data and model")
-    plt.plot(xx, data_n, 'r', alpha = 0.6, label = "Data with uncertanties")
-    plt.stairs(hist, edges, color = 'C0', label = 'Data', linewidth = 1.5)
-    plt.xlabel("$\\log(T_{90})$")
-    plt.ylabel("Normalized Counts")
-    plt.ylim([0,0.395])
+    fig0 = plt.figure("Data")
+    ax = fig0.add_subplot(111)
+    ax.plot(xx, data_n, 'r', alpha = 0.6, label = "Data with uncertainties")
+    ax.stairs(hist, edges, color = 'C0', label = 'Data', linewidth = 1.5)
+    ax.set_xlabel("$\\log(T_{90})$")
+    ax.set_ylabel("Normalized counts")
+    ax.set_ylim([0.0, 0.395])
+    ax.grid(linestyle = 'dashed')
+    ax.set_axisbelow(True)
     plt.legend()
-    plt.grid(linestyle = 'dashed')
-    #plt.savefig(main_dir+"\\Results\\1b\\Err_Dataset.png", dpi = 600)
 
-    
+
     # try to initialise things
         
     run = False
@@ -289,7 +290,6 @@ if __name__ == "__main__":
     for i in range(samples.shape[1]):
         ax = fig1.add_subplot(5, 1, i+1)
         ax.plot(samples[:,i], '.', color = 'C0')
-        ax.axhline(theta_0[i], color = 'orange', label = 'Initial value', linestyle = 'dashed')
         ax.set_ylabel(par_name[i])
     ax.set_xlabel("Iteration")
     plt.tight_layout()
@@ -299,24 +299,22 @@ if __name__ == "__main__":
     for i in range(samples.shape[1]):
         ax = fig2.add_subplot(5, 1, i+1)
         ax.plot(samples[:,i], '.', color = 'C0')
-        ax.axhline(theta_0[i], color = 'orange', label = 'Initial value', linestyle = 'dashed')
-        ax.axvline(burnin, color = 'r', label = 'Proposed burn-in', linestyle = 'dashed')
-        ax.set_xlim(-50, 2*burnin)
+        ax.axvline(burnin, color = 'r', label = 'Burn-in', linestyle = 'dashed')
+        ax.set_xlim(-10, 2*burnin)
         ax.set_ylabel(par_name[i])
     ax.set_xlabel("Iteration")
     plt.tight_layout()
 
-    """
-    fig = plt.figure("Chain posterior")
-    ax = fig.add_subplot(111)
+    fig_post = plt.figure("Chain posterior")
+    ax = fig_post.add_subplot(111)
     ax.plot(logP, label = 'log Posterior')
-    ax.axvline(400, color = 'r', label = 'Proposed burn-in', linestyle = 'dashed')
-    #ax.axhline(np.percentile(logP, 0.9), color = 'r', label = "50 percentile", linestyle='dashed')
-    ax.set_ylabel("log posterior")
+    ax.axvline(burnin, color = 'r', label = 'Burn-in', linestyle = 'dashed')
+    ax.set_ylabel("log Posterior")
     ax.set_xlabel("Iteration")
+    ax.set_xlim(-10, 2*burnin)
+    ax.grid(linestyle = 'dashed')
+    ax.set_axisbelow(True)
     plt.legend()
-    """
-    
     
     # look at autocorrelation for theta
     fig3 = plt.figure("Parameters autocorrelation", figsize = (6,6))
@@ -334,7 +332,7 @@ if __name__ == "__main__":
         ax.plot(autocorrelation(samples[:,i]), '.', color = 'C0', label = 'Autocorrelation')
         ax.axvline(thinning, color = 'r', label = 'Proposed thinning', linestyle = 'dashed')
         ax.set_ylabel(par_name[i])
-        ax.set_xlim(-50, 2 * thinning)
+        ax.set_xlim(-10, 2 * thinning)
     ax.set_xlabel("Iteration")
     plt.tight_layout()
     
@@ -383,7 +381,7 @@ if __name__ == "__main__":
     # Create dummy artists just for the legend
     from matplotlib.lines import Line2D
     legend_elements = [
-        Line2D([0], [0], color='C0', linewidth=1.5, label='Marginalised posterior samples'),
+        Line2D([0], [0], color='C0', linewidth=1.5, label='Marginalized posterior samples'),
         Line2D([0], [0], color='r', linestyle='dashed', label='Prior'),
         Line2D([0], [0], color='green', linestyle='dashed', label='Median value'),
         Line2D([0], [0], color='orange', linestyle='dashed', label='Median value $\\pm\\sigma$'),
@@ -392,35 +390,37 @@ if __name__ == "__main__":
     ax_leg.axis('off')  # Hide axes, ticks, spines and background
     plt.tight_layout()
 
-    
     posterior_models = [weighted_log_normal(xx, s) for s in parameters]
     l, pdf, h = np.percentile(posterior_models,[16,50,84],axis=0)
     w_normal_1 = np.percentile([s[0] * gauss(xx, s[1], s[2]) for s in parameters], 50, axis=0)
     w_normal_2 = np.percentile([(1-s[0]) * gauss(xx, s[3], s[4]) for s in parameters], 50, axis=0)
 
-   
     # plot the data with the best fit
-    fig6 = plt.figure("Data and result")
-    plt.plot(xx, data_n, color = 'C0', label = 'Data')
-    plt.plot(xx, pdf, 'r', label = "Model")
-    plt.fill_between(xx, h, l, facecolor='tomato', alpha = 0.5)
-    plt.plot(xx, w_normal_1, 'g', label = "Norm 1", alpha = 0.5)
-    plt.plot(xx, w_normal_2, color = 'orange', label = "Norm 2", alpha = 0.5)
-    plt.xlabel("$\\log(T_{90})$")
-    plt.ylabel("Normalized Counts")
-    plt.ylim([0,0.395])
+    fig6 = plt.figure("Data and model")
+    ax = fig6.add_subplot(111)
+    ax.plot(xx, data_n, color = 'C0', label = 'Data')
+    ax.plot(xx, pdf, 'r', label = "Model", zorder = 4)
+    ax.fill_between(xx, h, l, facecolor='tomato', alpha = 0.5)
+    ax.plot(xx, w_normal_1, 'g', label = "Norm 1", alpha = 0.5)
+    ax.plot(xx, w_normal_2, color = 'orange', label = "Norm 2", alpha = 0.5)
+    ax.set_xlabel("$\\log(T_{90})$")
+    ax.set_ylabel("Normalized Counts")
+    ax.set_ylim([0,0.395])
+    ax.grid(linestyle = 'dashed')
+    ax.set_axisbelow(True)
     plt.legend()
-    plt.grid(linestyle = 'dashed')
 
     # end of first point: save, show or close all the open figures
     """
+    fig0.savefig(main_dir+"\\Results\\1b\\Err_Dataset.png", dpi = 600)
     fig1.savefig(main_dir+"\\Results\\1b\\Err_Parameters_chain.png", dpi = 600)
     fig2.savefig(main_dir+"\\Results\\1b\\Err_Parameters_chain_zoom.png", dpi = 600)
+    fig_post.savefig(main_dir+"\\Results\\1b\\Err_Posterior_chain_zoom.png", dpi = 600)
     fig3.savefig(main_dir+"\\Results\\1b\\Err_Parameters_autocorr.png", dpi = 600)
     fig4.savefig(main_dir+"\\Results\\1b\\Err_Parameters_autocorr_zoom.png", dpi = 600)
     fig5.savefig(main_dir+"\\Results\\1b\\Err_Parameters_hist.png", dpi = 600)
     fig6.savefig(main_dir+"\\Results\\1b\\Err_Data_and_model.png", dpi = 600)
-
+    
     header = "par_val d_par_plus d_par_minus"
     np.savetxt(main_dir+"\\Results\\1b\\Err_parameters_values.txt", np.array([par_val, d_par_plus, d_par_minus]).T, header=header)
 
