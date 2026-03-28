@@ -187,11 +187,10 @@ if __name__ == "__main__":
     xx = np.linspace(-4,7,256)              # linear space on log_T
     yy = np.linspace(-2.5, 3.5, 256)        # linear space on log_HR
     
-    
     # try to initialise things
     # I have to define data so that data[ii] = [log_T[ii], log_HR[ii]] and see if it runs in 2D 
     data = np.array([log_T, log_HR]).T          #transpose to have format (N_point, N_dim = 2)
-    
+    """
     # 3 clusters    
     N_cluster = 3
     mu_0 = np.array([[-1,0],[1,0],[3.5,0]])
@@ -201,7 +200,7 @@ if __name__ == "__main__":
     N_cluster = 2
     mu_0 = np.array([[-1,0],[3.5,0]])
     cluster_color = ['g', 'orange']
-    """
+    
     sampler = state(N_cluster, data, mu_0=mu_0, alpha=1,rng=rng)
     _, _, mu_start, _ = sampler.posterior_parameters()
 
@@ -217,7 +216,7 @@ if __name__ == "__main__":
     plt.legend()
 
     # run n_step times
-    run = True
+    run = False
     burn_in = 50
     n_samples = 5000     # steps of the sampler
     n_step = burn_in+n_samples
@@ -251,7 +250,7 @@ if __name__ == "__main__":
             mu_trace[i+1] = mu_n
             log_p[burn_in+i] = sampler.state["log_joint_p"]
             # sample and save
-            for k in range(N_cluster):
+            for k in sampler.state["cluster_id_"]:
                 Sigma_j = invwishart(nu_n[k], Psi_n[k], seed=rng).rvs()                 # sample Sigma_j from the IW
                 mu_j = multivariate_normal(mu_n[k], Sigma_j/k_n[k], seed=rng).rvs()     # sample mu_j from multi_normal
                 mu_T[k,i] = mu_j[0]
@@ -436,16 +435,19 @@ if __name__ == "__main__":
             fig_hist_par_2 = fig4
 
     # confidence levels in the plane
-    from matplotlib.patches import Ellipse
+    from matplotlib.patches import Ellipse, PathPatch
+    from matplotlib.path import Path
+    import matplotlib.transforms as transforms
     scale = 2       # how many sigmas we want to represent? scale = 2 has ~68% of data 
 
     fig5 = plt.figure("Clusters in plane log_T, log_HR")
     ax = fig5.add_subplot(111)
     for k in range(N_cluster):
-        data_k = sampler.state["data_"][vec_z == k]
-        ax.scatter(data_k[:,0], data_k[:,1], marker = '.', color = cluster_color[k], label = "Cluster number "+str(k), zorder = 1, alpha=0.25)
+        #data_k = sampler.state["data_"][vec_z == k]
+        #ax.scatter(data_k[:,0], data_k[:,1], marker = '.', color = cluster_color[k], label = "Cluster number "+str(k), zorder = 1, alpha=0.25)
         for i in range(len(par_mu_T[0,:])):
             center = np.array([par_mu_T[k,i], par_mu_HR[k,i]])
+            ax.scatter(center[0], center[1], marker = '.', color = cluster_color[k], zorder = 1, alpha=0.05)
             Sigma = np.array([[par_sigma_T[k,i]**2, par_rho[k,i]*par_sigma_T[k,i]*par_sigma_HR[k,i]],
                               [par_rho[k,i]*par_sigma_T[k,i]*par_sigma_HR[k,i], par_sigma_HR[k,i]**2]])
             eigval, eigvec = np.linalg.eigh(Sigma)
@@ -454,15 +456,80 @@ if __name__ == "__main__":
             height = scale*2*np.sqrt(eigval[0])                               # minor axis
             # last one with label
             if i == len(par_mu_T[0,:])-1:
-                ellipse = Ellipse(xy=center, width=width, height=height, angle=angle, fill=False, color=cluster_color[k], alpha=0.5, label = "68% confidence area", zorder=2)
+                ellipse = Ellipse(xy=center, width=width, height=height, angle=angle, fill=False, color=cluster_color[k], alpha=0.05, label = "68% confidence area", zorder=2)
             else:
-                ellipse = Ellipse(xy=center, width=width, height=height, angle=angle, fill=False, color=cluster_color[k], alpha=0.5, zorder=2)
+                ellipse = Ellipse(xy=center, width=width, height=height, angle=angle, fill=False, color=cluster_color[k], alpha=0.05, zorder=2)
             ax.add_patch(ellipse)
     ax.set_xlabel("$\\log(T_{90})$")
+    ax.set_xlim(-4,7)
     ax.set_ylabel("$\\log(HR)$")
+    ax.set_ylim(-2.5,3.5)
     ax.grid(linestyle = 'dashed')
     ax.set_axisbelow(True)
     plt.legend()        
+
+    # function to draw confidence leves around ellipses
+    def draw_band(ax, center, width_out, height_out, width_in, height_in, angle, color, alpha=0.4, zorder=2):
+        angle_rad = np.radians(angle)
+        cos_a, sin_a = np.cos(angle_rad), np.sin(angle_rad)
+    
+        xx, yy = np.meshgrid(np.linspace(center[0]-width_out, center[0]+width_out, 1600),
+                         np.linspace(center[1]-height_out, center[1]+height_out, 1600))
+    
+        dx, dy = xx - center[0], yy - center[1]
+        x_rot =  cos_a * dx + sin_a * dy
+        y_rot = -sin_a * dx + cos_a * dy
+    
+        inside_out = (x_rot/(width_out/2))**2  + (y_rot/(height_out/2))**2 <= 1
+        inside_in  = (x_rot/(width_in/2))**2  + (y_rot/(height_in/2))**2  <= 1
+    
+        band = (inside_out & ~inside_in).astype(float)
+        band[band == 0] = np.nan  # transparent outside
+    
+        ax.contourf(xx, yy, band, levels=[0.5, 1.5], colors=[color], alpha=alpha, zorder=zorder)
+
+    conf_color = ['blue', 'red']
+    fig5b = plt.figure("Clusters in plane log_T, log_HR test")
+    ax = fig5b.add_subplot(111)
+    for k in range(N_cluster):
+        data_k = sampler.state["data_"][vec_z == k]
+        ax.scatter(data_k[:,0], data_k[:,1], marker = '.', color = cluster_color[k], zorder = 1, alpha=0.25)
+
+        center = np.array([par_mu_T[k,:], par_mu_HR[k,:]]).T
+        c_m = np.percentile(center, 50, axis=0)
+        ax.scatter(c_m[0], c_m[1], marker = '.', color = conf_color[k], zorder = 2, alpha=1)
+        eig = np.zeros(center.shape)
+        angle = np.zeros(center.shape[0])
+        for i in range(len(par_mu_T[0,:])):
+            Sigma = np.array([[par_sigma_T[k,i]**2, par_rho[k,i]*par_sigma_T[k,i]*par_sigma_HR[k,i]],
+                              [par_rho[k,i]*par_sigma_T[k,i]*par_sigma_HR[k,i], par_sigma_HR[k,i]**2]])
+            eig[i], eigvec = np.linalg.eigh(Sigma)
+            angle[i] = np.arctan2(eigvec[1,1], eigvec[0,1]) * 180/np.pi    # rotation angle
+        
+        # find median values
+        eig_p = np.percentile(eig, [5,50,95], axis=0)
+        angle_m = np.degrees(np.arctan2(np.mean(np.sin(np.radians(angle))), np.mean(np.cos(np.radians(angle))))) 
+        width = scale*2*np.sqrt(eig_p[:,-1])                               # major axis
+        height = scale*2*np.sqrt(eig_p[:,0])                               # minor axis
+        # 5% ellipse
+        ellipse = Ellipse(xy=c_m, width=width[0], height=height[0], angle=angle_m, fill=False, color = conf_color[k], linestyle='dashed')
+        ax.add_patch(ellipse)
+        # 95% ellipse
+        ellipse = Ellipse(xy=c_m,  width=width[2], height=height[2], angle=angle_m, fill=False, color = conf_color[k], linestyle='dashed')
+        ax.add_patch(ellipse)
+        
+        draw_band(ax, c_m, width[2], height[2], width[0], height[0], angle_m, conf_color[k], alpha=0.5, zorder=2)
+
+        # median ellipse
+        ellipse = Ellipse(xy=c_m, width=width[1], height=height[1], angle=angle_m, fill=False, color=conf_color[k], alpha=1, zorder=3)
+        ax.add_patch(ellipse) 
+    ax.set_xlabel("$\\log(T_{90})$")
+    ax.set_xlim(-4,7)
+    ax.set_ylabel("$\\log(HR)$")
+    ax.set_ylim(-2.5,3.5)
+    ax.grid(linestyle = 'dashed')
+    ax.set_axisbelow(True)
+    
 
     # plane assignments and marginals
     # define the bins
@@ -491,7 +558,9 @@ if __name__ == "__main__":
         axH.barh(center_HR, count, width_HR, color = cluster_color[k], label = "Cluster number "+str(k), left=bottom_HR)
         bottom_HR += count
     ax.set_xlabel("$\\log(T_{90})$")
+    ax.set_xlim(-4,7)
     ax.set_ylabel("$\\log(HR)$")
+    ax.set_ylim(-2.5,3.5)
     ax.grid(linestyle = 'dashed')
     ax.set_axisbelow(True)
     axT.set_ylabel("Counts")
@@ -508,7 +577,8 @@ if __name__ == "__main__":
 
     # end of the point: show, save or close all the open figures
 
-    #plt.show()
+    plt.show()
+    exit()
     
     path = main_dir+"\\Results\\5\\"+str(N_cluster)+"_step_"+str(n_step)
     # Check if the results dir exists
@@ -525,7 +595,7 @@ if __name__ == "__main__":
     if N_cluster > 2:
         fig_hist_par_2.savefig(path+"\\Parameters_hist_2.png", dpi = 600)
 
-    fig5.savefig(path+"\\Plane_confidence.png", dpi = 600)
+    fig5b.savefig(path+"\\Plane_confidence.png", dpi = 600)
     fig6.savefig(path+"\\Plane_and_marginal.png", dpi = 600)
 
     header = "par_val d_par_plus d_par_minus for [mu_T, sigma_T, mu_HR, sigma_HR, rho]"
