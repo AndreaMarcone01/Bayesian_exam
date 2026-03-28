@@ -217,7 +217,7 @@ if __name__ == "__main__":
     plt.legend()
 
     # run n_step times
-    run = False
+    run = True
     burn_in = 50
     n_samples = 5000     # steps of the sampler
     n_step = burn_in+n_samples
