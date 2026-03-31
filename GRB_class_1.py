@@ -214,13 +214,17 @@ if __name__ == "__main__":
     main_dir = os.path.dirname(os.path.realpath(__file__))
     log_T90, d_log_T90, Hardness_R = np.loadtxt(main_dir+"\\Data\\GRB_data.txt", unpack=True)
     
-    print("Minimum is:", np.min(log_T90))
-    print("Maximum is:", np.max(log_T90))
-    print("Difference minimum is:", np.min(np.diff(log_T90)))
+    print(f"Minimum is: {np.min(log_T90):.2f}")
+    print(f"Maximum is: {np.max(log_T90):.2f}")
+    print(f"Difference minimum is: {np.min(np.diff(log_T90)):.2f}")
+    print(f"Maximum error is: {np.max(d_log_T90):.2e}")
+    print(f"Mean error is: {np.mean(d_log_T90):.2e}")
+    print(f"Median error is: {np.median(d_log_T90):.2e}")
     
     nbins = 50
     bins = np.linspace(-4, 7, nbins)
     print(f"A bin is large {np.diff(bins)[0]:.2e}")
+
     hist, edges = np.histogram(log_T90, bins = bins, density = True)    # used in plot
     counts, _ = np.histogram(log_T90, bins = bins)                      # used for the real analysis
     center = (edges[1:] + edges[:-1])*0.5
@@ -248,7 +252,7 @@ if __name__ == "__main__":
     ax.grid(linestyle = 'dashed')
     ax.set_axisbelow(True)
     fig0.legend()
-    fig0.savefig(main_dir+"\\Results\\Data.png", dpi = 600)
+    #fig0.savefig(main_dir+"\\Results\\Data.png", dpi = 600)
     plt.show()
     exit()
     """
@@ -288,10 +292,12 @@ if __name__ == "__main__":
         ax = fig1.add_subplot(5, 1, i+1)
         ax.plot(samples[:,i], '.', color = 'C0')
         ax.set_ylabel(par_name[i])
+        ax.grid(linestyle = 'dashed')
+        ax.set_axisbelow(True)
     ax.set_xlabel("Iteration")
     plt.tight_layout()
     
-    burnin = 250 
+    burnin = 200 
     fig2 = plt.figure("Parameters chain: zoom to burn-in", figsize = (6,6))
     for i in range(samples.shape[1]):
         ax = fig2.add_subplot(5, 1, i+1)
@@ -299,11 +305,21 @@ if __name__ == "__main__":
         ax.axvline(burnin, color = 'r', label = 'Burn-in', linestyle = 'dashed')
         ax.set_xlim(-10, 2*burnin)
         ax.set_ylabel(par_name[i])
+        ax.grid(linestyle = 'dashed')
+        ax.set_axisbelow(True)
     ax.set_xlabel("Iteration")
     plt.tight_layout()
 
+    fig_post0 = plt.figure("Chain posterior")
+    ax = fig_post0.add_subplot(111)
+    ax.plot(logP, label = 'log Posterior')
+    ax.set_ylabel("log Posterior")
+    ax.set_xlabel("Iteration")
+    ax.grid(linestyle = 'dashed')
+    ax.set_axisbelow(True)
+    plt.legend()
     
-    fig_post = plt.figure("Chain posterior")
+    fig_post = plt.figure("Chain posterior zoom")
     ax = fig_post.add_subplot(111)
     ax.plot(logP, label = 'log Posterior')
     ax.axvline(burnin, color = 'r', label = 'Burn-in', linestyle = 'dashed')
@@ -321,19 +337,26 @@ if __name__ == "__main__":
         ax = fig3.add_subplot(5, 1, i+1)
         ax.plot(autocorrelation(samples[:,i]), '.', color = 'C0', label = 'Autocorrelation')
         ax.set_ylabel(par_name[i])
+        ax.grid(linestyle = 'dashed')
+        ax.set_axisbelow(True)
     ax.set_xlabel("Iteration")
     plt.tight_layout()
 
-    thinning = 100
+    thinning = 125
     fig4 = plt.figure("Parameters autocorrelation: zoom to thinning", figsize = (6,6))
     for i in range(samples.shape[1]):
         ax = fig4.add_subplot(5, 1, i+1)
-        ax.plot(autocorrelation(samples[:,i]), '.', color = 'C0', label = 'Autocorrelation')
-        ax.axvline(thinning, color = 'r', label = 'Proposed thinning', linestyle = 'dashed')
+        autoc = autocorrelation(samples[:,i])
+        ax.plot(autoc, '.', color = 'C0', label = f'Value at thinning: {autoc[thinning]:.2f}')
+        ax.axvline(thinning, color = 'r', linestyle = 'dashed')
         ax.set_ylabel(par_name[i])
         ax.set_xlim(-10, 2 * thinning)
+        ax.legend()
+        ax.grid(linestyle = 'dashed')
+        ax.set_axisbelow(True)
     ax.set_xlabel("Iteration")
     plt.tight_layout()
+
     
     # after burn-in and autocorrelation we plot the histograms of the parameters
     parameters = samples[burnin:,:]
@@ -359,6 +382,7 @@ if __name__ == "__main__":
             ax = fig5.add_subplot(3, 2, i+1)
         counts_i, bins_i = np.histogram(parameters[:,i], bins = 30, density=True)
         ax.stairs(counts_i, bins_i, color = 'C0', linewidth = 1.5, baseline=0)
+        """
         # plot the priors, Jeffrey for sigmas and uniform for others
         if i == 2 or i == 4:
             a = bounds[i][0]
@@ -367,7 +391,7 @@ if __name__ == "__main__":
             ax.plot(ss, 1/(np.log(b/a) * ss), color = 'r', linestyle='dashed')
         else:
             ax.axhline(1/(bounds[i][1] - bounds[i][0]), color = 'r', linestyle='dashed')
-
+        """
         ax.axvline(par_val[i], color = 'green', linestyle='dashed')
         ax.axvline(par_val[i]+d_par_plus[i], color = 'orange', linestyle='dashed')
         ax.axvline(par_val[i]-d_par_minus[i], color = 'orange', linestyle='dashed')
@@ -381,28 +405,27 @@ if __name__ == "__main__":
     from matplotlib.lines import Line2D
     legend_elements = [
         Line2D([0], [0], color='C0', linewidth=1.5, label='Marginalised posterior samples'),
-        Line2D([0], [0], color='r', linestyle='dashed', label='Prior'),
+        #Line2D([0], [0], color='r', linestyle='dashed', label='Prior'),
         Line2D([0], [0], color='green', linestyle='dashed', label='Median value'),
-        Line2D([0], [0], color='orange', linestyle='dashed', label='Median value $\\pm\\sigma$'),
-    ]
+        Line2D([0], [0], color='orange', linestyle='dashed', label='Median value $\\pm\\sigma$')]
     ax_leg.legend(handles=legend_elements, loc='center')
     ax_leg.axis('off')  # Hide axes, ticks, spines and background
     plt.tight_layout()
 
     
     posterior_models = [weighted_log_normal(xx, s) for s in parameters]
-    l, pdf, h = np.percentile(posterior_models,[16,50,84],axis=0)
+    l, pdf, h = np.percentile(posterior_models,[5,50,95],axis=0)
     w_normal_1 = np.percentile([s[0] * gauss(xx, s[1], s[2]) for s in parameters], 50, axis=0)
     w_normal_2 = np.percentile([(1-s[0]) * gauss(xx, s[3], s[4]) for s in parameters], 50, axis=0)
 
     # plot the data with the best fit
     fig6 = plt.figure("Data and model")
     ax = fig6.add_subplot(111)
-    ax.stairs(hist, edges, color = 'C0', label = 'Data')
+    ax.stairs(hist, edges, color = 'C0', label = 'Data', linewidth=1.5)
     ax.plot(xx, pdf, 'r', label = "Model", zorder = 4)
-    ax.fill_between(xx, h, l, facecolor='tomato', alpha = 0.5)
-    ax.plot(xx, w_normal_1, 'g', label = "Norm 1", alpha = 0.5)
-    ax.plot(xx, w_normal_2, color = 'orange', label = "Norm 2", alpha = 0.5)
+    ax.fill_between(xx, h, l, facecolor='salmon', alpha = 0.5, label="90% confidence")
+    ax.plot(xx, w_normal_1, 'g', label = "Norm 1", alpha = 0.75)
+    ax.plot(xx, w_normal_2, color = 'darkorange', label = "Norm 2", alpha = 0.75)
     ax.set_xlabel("$\\log(T_{90})$")
     ax.set_ylabel("Normalized Counts")
     ax.set_ylim([0,0.395])
@@ -411,9 +434,13 @@ if __name__ == "__main__":
     plt.legend()
     
     # end of first point: show, save or close all the open figures
-    """
+
+    #plt.show()
+    #exit()
+
     fig1.savefig(main_dir+"\\Results\\1a\\Parameters_chain.png", dpi = 600)
     fig2.savefig(main_dir+"\\Results\\1a\\Parameters_chain_zoom.png", dpi = 600)
+    fig_post0.savefig(main_dir+"\\Results\\1a\\Posterior_chain.png", dpi = 600)
     fig_post.savefig(main_dir+"\\Results\\1a\\Posterior_chain_zoom.png", dpi = 600)
     fig3.savefig(main_dir+"\\Results\\1a\\Parameters_autocorr.png", dpi = 600)
     fig4.savefig(main_dir+"\\Results\\1a\\Parameters_autocorr_zoom.png", dpi = 600)
@@ -425,6 +452,3 @@ if __name__ == "__main__":
 
     header = "model w_normal_1 w_normal_2"
     np.savetxt(main_dir+"\\Results\\1a\\model_values.txt", np.array([pdf, w_normal_1, w_normal_2]).T, header=header)
-    """
-    #plt.show()
-    #plt.close('all')
