@@ -245,6 +245,7 @@ if __name__ == "__main__":
     ax.stairs(counts, edges, color = 'C0', label = 'Data', linewidth=1.5)
     ax.set_xlabel("$\\log(T_{90})$")
     ax.set_ylabel("Counts")
+    ax.set_ylim(0,170)
     ax.grid(linestyle = 'dashed')
     ax.set_axisbelow(True)
     fig0.legend()
@@ -418,22 +419,22 @@ if __name__ == "__main__":
     # plot the data with the best fit
     fig6 = plt.figure("Data and model")
     ax = fig6.add_subplot(111)
-    ax.stairs(counts, edges, color = 'C0', label = 'Data', linewidth=1.5)
+    ax.stairs(counts, edges, color = 'C0', label = 'Data', linewidth=1.5, zorder =1)
     ax.plot(xx, pdf*scale, 'r', label = "Model", zorder = 4)
-    ax.fill_between(xx, h*scale, l*scale, facecolor='salmon', alpha = 0.5, label="90% confidence")
-    ax.plot(xx, w_normal_1*scale, 'g', label = "Norm 1", alpha = 0.75)
-    ax.plot(xx, w_normal_2*scale, color = 'darkorange', label = "Norm 2", alpha = 0.75)
+    ax.fill_between(xx, h*scale, l*scale, facecolor='salmon', alpha = 0.5, label="90% confidence", zorder =2)
+    ax.plot(xx, w_normal_1*scale, 'g', label = "Norm 1", alpha = 0.75, zorder =3)
+    ax.plot(xx, w_normal_2*scale, color = 'darkorange', label = "Norm 2", alpha = 0.75, zorder =3)
     ax.set_xlabel("$\\log(T_{90})$")
     ax.set_ylabel("Counts")
-    #ax.set_ylim([0,0.395])
+    ax.set_ylim([0,170])
     ax.grid(linestyle = 'dashed')
     ax.set_axisbelow(True)
     plt.legend()
     
     # end of first point: show, save or close all the open figures
 
-    #plt.show()
-    #exit()
+    plt.show()
+    exit()
 
     fig1.savefig(main_dir+"\\Results\\1a\\Parameters_chain.png", dpi = 600)
     fig2.savefig(main_dir+"\\Results\\1a\\Parameters_chain_zoom.png", dpi = 600)

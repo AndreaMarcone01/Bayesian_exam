@@ -71,44 +71,43 @@ def log_prior(theta, bounds):
     
     return prior
 
-def log_likelihood(theta, counts, center, model):
-    """Poisson log likelihood for model.
+def log_likelihood(theta, data, err):
+    """Log likelihood for model with errors. Convolution between the two gaussians of the model and the gaussian of the error
     
     Args:
         theta (array): parameters of the model
-        counts (array): counts of the histogram not normalized
-        center (array): center of the bins of histogram
-        model (function): model to use
+        data (array): measured points
+        err (array): gaussian errors associated to data
         
     Returns:
         likelihood (float): log of the likelihood
     """
 
-    N = np.sum(counts)
-    dx = np.diff(center)[0]
-    expected_count = N * model(center, theta) * dx
+    w = theta[0]
+    mu_1 = theta[1]
+    sigma_1 = theta[2]
+    mu_2 = theta[3]
+    sigma_2 = theta[4]
 
-    if np.any((expected_count == 0) & (counts > 0)):       # if expected == 0 we have a nan problem, but if also counts == 0 it's right
-            return -np.inf                                 # in the case that the model sees 0 counts but in realty there are return -inf
-        
-    log_like = xlogy(counts, expected_count) - expected_count
+    conv_1 = w * gauss(data, mu_1, np.sqrt(sigma_1**2 + err**2))
+    conv_2 = (1-w) * gauss(data, mu_2, np.sqrt(sigma_2**2 + err**2))
+    log_like = np.log(conv_1 + conv_2)
     return np.sum(log_like)
 
-def log_posterior(theta, counts, center, model, bounds):
+def log_posterior(theta, data, err, bounds):
     """Log posterior for model.
     
     Args:
         theta (array): parameters of the model
-        counts (array): counts of the histogram not normalized
-        center (array): center of the bins of histogram
-        model (function): model to use
+        data (array): measured points
+        err (array): gaussian errors associated to data
         bounds (array): bound for each parameter, expected as [min, max]
         
     Returns:
         posterior (array): log of the posterior
     """
     
-    posterior = log_prior(theta, bounds) + log_likelihood(theta, counts, center, model)
+    posterior = log_prior(theta, bounds) + log_likelihood(theta, data, err)
     return posterior
 
 def proposed_distribution(x, bounds, rng, blind = True):
@@ -141,15 +140,14 @@ def proposed_distribution(x, bounds, rng, blind = True):
     pdf = rng.multivariate_normal(np.zeros(d), covariance)
     return pdf
 
-def metropolis_hastings(theta0, postpdf, counts, center, model, bounds, rng, blind, n = 10000):
+def metropolis_hastings(theta0, postpdf, data, err, bounds, rng, blind, n = 10000):
     """Metropolis hastings algorithm to sample the posterior.
     
     Args:
         theta0 (array): initial point for the chain
         postpdf (function): posterior to use for the chain
-        counts (array): counts of the histogram not normalized
-        center (array): center of the bins of histogram
-        model (function): model to use for posterior
+        data (array): measured points
+        err (array): gaussian errors associated to data
         bounds (array): bound for each parameter, expected as [min, max]
         rng (np.random.default_rng): default rng for reproduce results
         blind (boolean): decide if run with a blind covariance or use a already note covariance
@@ -160,7 +158,7 @@ def metropolis_hastings(theta0, postpdf, counts, center, model, bounds, rng, bli
     """
 
     d = theta0.shape[0]
-    logP0 = postpdf(theta0, counts, center, model, bounds)
+    logP0 = postpdf(theta0, data, err, bounds)
     samples = np.zeros((n,d), dtype=np.float64)
     logP = np.zeros(n, dtype=np.float64)
     accepted = 0
@@ -168,7 +166,7 @@ def metropolis_hastings(theta0, postpdf, counts, center, model, bounds, rng, bli
 
     for i in range(n):
         theta_try = theta0 + proposed_distribution(theta0, bounds, rng, blind)
-        logP_try = postpdf(theta_try, counts, center, model, bounds)
+        logP_try = postpdf(theta_try, data, err, bounds)
         
         if logP_try - logP0 > np.log(np.random.uniform(0,1)):
             samples[i,:] = theta_try
@@ -212,12 +210,11 @@ if __name__ == "__main__":
     rng = np.random.default_rng(1313) # initialize seed for reproducibility
 
     main_dir = os.path.dirname(os.path.realpath(__file__))
-    log_T90, d_log_T90, Hardness_R = np.loadtxt(main_dir+"\\Data\\GRB_data.txt", unpack=True)
+    log_T, d_log_T, Hardness_R = np.loadtxt(main_dir+"\\Data\\GRB_data.txt", unpack=True)
     
     nbins = 50
     bins = np.linspace(-4, 7, nbins)
-    hist, edges = np.histogram(log_T90, bins = bins, density = True)    # used in plot
-    counts, _ = np.histogram(log_T90, bins = bins)                      # used for the real analysis
+    counts, edges = np.histogram(log_T, bins = bins)                      # used for the real analysis
     center = (edges[1:] + edges[:-1])*0.5
 
     par_name = np.array(["$w$", "$\\mu_1$", "$\\sigma_1$", "$\\mu_2$", "$\\sigma_2$"])
@@ -233,34 +230,32 @@ if __name__ == "__main__":
 
     # build data with uncertainties
     data = np.zeros(len(xx))
-    for i in range(len(log_T90)):
-        data = data + gauss(xx, log_T90[i], d_log_T90[i]) * dx
+    for i in range(len(log_T)):
+        data = data + gauss(xx, log_T[i], d_log_T[i]) * dx
 
     data_n = data/(np.sum(data) * dx)               # normalize to have area 1 (for plots)
+    scale = np.sum(counts)*np.diff(bins)[0]         # scale from normalized data to binned ones
     
     # plot the data
     fig0 = plt.figure("Data")
     ax = fig0.add_subplot(111)
-    ax.plot(xx, data_n, color='tomato', alpha = 0.6, label = "Data with uncertainties")
-    ax.stairs(hist, edges, color = 'C0', label = 'Data', linewidth = 1.5)
+    ax.plot(xx, data_n*scale, 'r', alpha = 0.6, label = "Data with uncertainties")
+    ax.stairs(counts, edges, color = 'C0', label = 'Data', linewidth = 1.5)
     ax.set_xlabel("$\\log(T_{90})$")
-    ax.set_ylabel("Normalized counts")
-    ax.set_ylim([0.0, 0.395])
+    ax.set_ylabel("Counts")
+    ax.set_ylim([0.0, 170])
     ax.grid(linestyle = 'dashed')
     ax.set_axisbelow(True)
     plt.legend()
-    plt.show()
-    exit()
 
 
     # try to initialise things
-        
     run = False
     prep_run = True
 
     if run == True:
-        samples, logP = metropolis_hastings(theta_0, log_posterior, data, xx, 
-                                            weighted_log_normal, bounds, rng, blind = True)
+        samples, logP = metropolis_hastings(theta_0, log_posterior, log_T, d_log_T, 
+                                            bounds, rng, blind = True)
         
         # use this first estimate to adjust the proposal
         covariance = np.cov(samples.T)
@@ -268,8 +263,8 @@ if __name__ == "__main__":
 
         if prep_run == True:
             # re-run chain with new covariance in proposal
-            samples, logP = metropolis_hastings(theta_0, log_posterior, data, xx, 
-                                            weighted_log_normal, bounds, rng, blind = False, n=100000)
+            samples, logP = metropolis_hastings(theta_0, log_posterior, log_T, d_log_T,
+                                                bounds, rng, blind = False, n=100000)
         
         # save the chain
         header = "w , mu_1, sigma_1, mu_2, sigma_2"
@@ -287,10 +282,12 @@ if __name__ == "__main__":
         ax = fig1.add_subplot(5, 1, i+1)
         ax.plot(samples[:,i], '.', color = 'C0')
         ax.set_ylabel(par_name[i])
+        ax.grid(linestyle = 'dashed')
+        ax.set_axisbelow(True)
     ax.set_xlabel("Iteration")
     plt.tight_layout()
 
-    burnin = 250 
+    burnin = 300 
     fig2 = plt.figure("Parameters chain: zoom to burn-in", figsize = (6,6))
     for i in range(samples.shape[1]):
         ax = fig2.add_subplot(5, 1, i+1)
@@ -298,10 +295,22 @@ if __name__ == "__main__":
         ax.axvline(burnin, color = 'r', label = 'Burn-in', linestyle = 'dashed')
         ax.set_xlim(-10, 2*burnin)
         ax.set_ylabel(par_name[i])
+        ax.grid(linestyle = 'dashed')
+        ax.set_axisbelow(True)
     ax.set_xlabel("Iteration")
     plt.tight_layout()
 
-    fig_post = plt.figure("Chain posterior")
+    # look at the posterior 
+    fig_post0 = plt.figure("Chain posterior")
+    ax = fig_post0.add_subplot(111)
+    ax.plot(logP, label = 'log Posterior')
+    ax.set_ylabel("log Posterior")
+    ax.set_xlabel("Iteration")
+    ax.grid(linestyle = 'dashed')
+    ax.set_axisbelow(True)
+    plt.legend()
+
+    fig_post = plt.figure("Chain posterior zoom")
     ax = fig_post.add_subplot(111)
     ax.plot(logP, label = 'log Posterior')
     ax.axvline(burnin, color = 'r', label = 'Burn-in', linestyle = 'dashed')
@@ -311,13 +320,16 @@ if __name__ == "__main__":
     ax.grid(linestyle = 'dashed')
     ax.set_axisbelow(True)
     plt.legend()
-    
+
+
     # look at autocorrelation for theta
     fig3 = plt.figure("Parameters autocorrelation", figsize = (6,6))
     for i in range(samples.shape[1]):
         ax = fig3.add_subplot(5, 1, i+1)
         ax.plot(autocorrelation(samples[:,i]), '.', color = 'C0', label = 'Autocorrelation')
         ax.set_ylabel(par_name[i])
+        ax.grid(linestyle = 'dashed')
+        ax.set_axisbelow(True)
     ax.set_xlabel("Iteration")
     plt.tight_layout()
 
@@ -325,10 +337,14 @@ if __name__ == "__main__":
     fig4 = plt.figure("Parameters autocorrelation: zoom to thinning", figsize = (6,6))
     for i in range(samples.shape[1]):
         ax = fig4.add_subplot(5, 1, i+1)
-        ax.plot(autocorrelation(samples[:,i]), '.', color = 'C0', label = 'Autocorrelation')
-        ax.axvline(thinning, color = 'r', label = 'Proposed thinning', linestyle = 'dashed')
+        autoc = autocorrelation(samples[:,i])
+        ax.plot(autoc, '.', color = 'C0', label = f'Value at thinning: {autoc[thinning]:.2f}')
+        ax.axvline(thinning, color = 'r', linestyle = 'dashed')
         ax.set_ylabel(par_name[i])
         ax.set_xlim(-10, 2 * thinning)
+        ax.legend()
+        ax.grid(linestyle = 'dashed')
+        ax.set_axisbelow(True)
     ax.set_xlabel("Iteration")
     plt.tight_layout()
     
@@ -356,6 +372,7 @@ if __name__ == "__main__":
             ax = fig5.add_subplot(3, 2, i+1)
         counts_i, bins_i = np.histogram(parameters[:,i], bins = 30, density=True)
         ax.stairs(counts_i, bins_i, color = 'C0', linewidth = 1.5, baseline=0)
+        """
         # plot the priors, Jeffrey for sigmas and uniform for others
         if i == 2 or i == 4:
             a = bounds[i][0]
@@ -364,7 +381,7 @@ if __name__ == "__main__":
             ax.plot(ss, 1/(np.log(b/a) * ss), color = 'r', linestyle='dashed')
         else:
             ax.axhline(1/(bounds[i][1] - bounds[i][0]), color = 'r', linestyle='dashed')
-
+        """
         ax.axvline(par_val[i], color = 'green', linestyle='dashed')
         ax.axvline(par_val[i]+d_par_plus[i], color = 'orange', linestyle='dashed')
         ax.axvline(par_val[i]-d_par_minus[i], color = 'orange', linestyle='dashed')
@@ -378,42 +395,43 @@ if __name__ == "__main__":
     from matplotlib.lines import Line2D
     legend_elements = [
         Line2D([0], [0], color='C0', linewidth=1.5, label='Marginalized posterior samples'),
-        Line2D([0], [0], color='r', linestyle='dashed', label='Prior'),
+        #Line2D([0], [0], color='r', linestyle='dashed', label='Prior'),
         Line2D([0], [0], color='green', linestyle='dashed', label='Median value'),
-        Line2D([0], [0], color='orange', linestyle='dashed', label='Median value $\\pm\\sigma$'),
-    ]
+        Line2D([0], [0], color='orange', linestyle='dashed', label='Median value $\\pm\\sigma$')]
     ax_leg.legend(handles=legend_elements, loc='center')
     ax_leg.axis('off')  # Hide axes, ticks, spines and background
     plt.tight_layout()
 
     posterior_models = [weighted_log_normal(xx, s) for s in parameters]
-    l, pdf, h = np.percentile(posterior_models,[16,50,84],axis=0)
+    l, pdf, h = np.percentile(posterior_models,[5,50,95],axis=0)
     w_normal_1 = np.percentile([s[0] * gauss(xx, s[1], s[2]) for s in parameters], 50, axis=0)
     w_normal_2 = np.percentile([(1-s[0]) * gauss(xx, s[3], s[4]) for s in parameters], 50, axis=0)
 
+    scale = np.sum(counts)*np.diff(bins)[0]
     # plot the data with the best fit
     fig6 = plt.figure("Data and model")
     ax = fig6.add_subplot(111)
-    ax.plot(xx, data_n, color = 'C0', label = 'Data', linewidth=1.5)
-    ax.plot(xx, pdf, 'r', label = "Model", zorder = 4)
-    ax.fill_between(xx, h, l, facecolor='salmon', alpha = 0.5, label="90% confidence")
-    ax.plot(xx, w_normal_1, 'g', label = "Norm 1", alpha = 0.75)
-    ax.plot(xx, w_normal_2, color = 'darkorange', label = "Norm 2", alpha = 0.75)
+    ax.plot(xx, data_n*scale, color = 'C0', label = 'Data', zorder=1)
+    ax.plot(xx, pdf*scale, 'r', label = "Model", zorder = 4)
+    ax.fill_between(xx, h*scale, l*scale, facecolor='salmon', alpha = 0.5, label="90% confidence", zorder=2)
+    ax.plot(xx, w_normal_1*scale, 'g', label = "Norm 1", alpha = 0.75,zorder=3)
+    ax.plot(xx, w_normal_2*scale, color = 'darkorange', label = "Norm 2", alpha = 0.75,zorder=3)
     ax.set_xlabel("$\\log(T_{90})$")
-    ax.set_ylabel("Normalized Counts")
-    ax.set_ylim([0,0.395])
+    ax.set_ylabel("Counts")
+    ax.set_ylim([0,170])
     ax.grid(linestyle = 'dashed')
     ax.set_axisbelow(True)
     plt.legend()
 
-    # end of first point: save, show or close all the open figures
+    # end of  point: save, show or close all the open figures
     
-    plt.show()
-    exit()
+    #plt.show()
+    #exit()
 
     fig0.savefig(main_dir+"\\Results\\1b\\Err_Dataset.png", dpi = 600)
     fig1.savefig(main_dir+"\\Results\\1b\\Err_Parameters_chain.png", dpi = 600)
     fig2.savefig(main_dir+"\\Results\\1b\\Err_Parameters_chain_zoom.png", dpi = 600)
+    fig_post0.savefig(main_dir+"\\Results\\1b\\Err_Posterior_chain.png", dpi = 600)
     fig_post.savefig(main_dir+"\\Results\\1b\\Err_Posterior_chain_zoom.png", dpi = 600)
     fig3.savefig(main_dir+"\\Results\\1b\\Err_Parameters_autocorr.png", dpi = 600)
     fig4.savefig(main_dir+"\\Results\\1b\\Err_Parameters_autocorr_zoom.png", dpi = 600)
