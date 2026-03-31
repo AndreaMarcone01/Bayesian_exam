@@ -1,7 +1,6 @@
 # Python script for point 1b: find parameters of the classification model with uncertainties on the measures
 
 import numpy as np
-from scipy.special import xlogy
 from pdf_analysis import errors_around_peak
 
 def gauss(x, mu, sigma):
@@ -72,7 +71,7 @@ def log_prior(theta, bounds):
     return prior
 
 def log_likelihood(theta, data, err):
-    """Log likelihood for model with errors. Convolution between the two gaussians of the model and the gaussian of the error
+    """Log likelihood for model with errors. Convolution between the two gaussian of the model and the gaussian of the error
     
     Args:
         theta (array): parameters of the model
@@ -423,10 +422,10 @@ if __name__ == "__main__":
     ax.set_axisbelow(True)
     plt.legend()
 
-    # end of  point: save, show or close all the open figures
+    # end of point: save, show or close all the open figures
     
-    #plt.show()
-    #exit()
+    plt.show()
+    exit()
 
     fig0.savefig(main_dir+"\\Results\\1b\\Err_Dataset.png", dpi = 600)
     fig1.savefig(main_dir+"\\Results\\1b\\Err_Parameters_chain.png", dpi = 600)
