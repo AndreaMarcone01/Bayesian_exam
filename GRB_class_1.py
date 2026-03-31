@@ -222,11 +222,11 @@ if __name__ == "__main__":
     print(f"Median error is: {np.median(d_log_T90):.2e}")
     
     nbins = 50
-    bins = np.linspace(-4, 7, nbins)
+    bins = np.linspace(-4, 7, nbins)                        # bins of the histogram
+    xx = np.linspace(-4,7,256)                              # linearspace for smooth plots
     print(f"A bin is large {np.diff(bins)[0]:.2e}")
 
-    hist, edges = np.histogram(log_T90, bins = bins, density = True)    # used in plot
-    counts, _ = np.histogram(log_T90, bins = bins)                      # used for the real analysis
+    counts, edges = np.histogram(log_T90, bins = bins)                      # hist of data
     center = (edges[1:] + edges[:-1])*0.5
 
     par_name = np.array(["$w$", "$\\mu_1$", "$\\sigma_1$", "$\\mu_2$", "$\\sigma_2$"])
@@ -238,10 +238,6 @@ if __name__ == "__main__":
                         rng.uniform(0.01,3)])
     theta_fit = np.array([0.4, -0.5, 1.5, 3.6, 0.8])
     
-    xx = np.linspace(-4,7,256)
-    pdf = weighted_log_normal(xx, theta_0)
-    pdf_f = weighted_log_normal(xx, theta_fit)
-
     """
     # plot the data
     fig0 = plt.figure("Data and model")
@@ -418,17 +414,18 @@ if __name__ == "__main__":
     w_normal_1 = np.percentile([s[0] * gauss(xx, s[1], s[2]) for s in parameters], 50, axis=0)
     w_normal_2 = np.percentile([(1-s[0]) * gauss(xx, s[3], s[4]) for s in parameters], 50, axis=0)
 
+    scale = np.diff(bins)[0]*np.sum(counts)
     # plot the data with the best fit
     fig6 = plt.figure("Data and model")
     ax = fig6.add_subplot(111)
-    ax.stairs(hist, edges, color = 'C0', label = 'Data', linewidth=1.5)
-    ax.plot(xx, pdf, 'r', label = "Model", zorder = 4)
-    ax.fill_between(xx, h, l, facecolor='salmon', alpha = 0.5, label="90% confidence")
-    ax.plot(xx, w_normal_1, 'g', label = "Norm 1", alpha = 0.75)
-    ax.plot(xx, w_normal_2, color = 'darkorange', label = "Norm 2", alpha = 0.75)
+    ax.stairs(counts, edges, color = 'C0', label = 'Data', linewidth=1.5)
+    ax.plot(xx, pdf*scale, 'r', label = "Model", zorder = 4)
+    ax.fill_between(xx, h*scale, l*scale, facecolor='salmon', alpha = 0.5, label="90% confidence")
+    ax.plot(xx, w_normal_1*scale, 'g', label = "Norm 1", alpha = 0.75)
+    ax.plot(xx, w_normal_2*scale, color = 'darkorange', label = "Norm 2", alpha = 0.75)
     ax.set_xlabel("$\\log(T_{90})$")
-    ax.set_ylabel("Normalized Counts")
-    ax.set_ylim([0,0.395])
+    ax.set_ylabel("Counts")
+    #ax.set_ylim([0,0.395])
     ax.grid(linestyle = 'dashed')
     ax.set_axisbelow(True)
     plt.legend()
