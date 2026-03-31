@@ -213,14 +213,9 @@ if __name__ == "__main__":
 
     main_dir = os.path.dirname(os.path.realpath(__file__))
     log_T90, d_log_T90, Hardness_R = np.loadtxt(main_dir+"\\Data\\GRB_data.txt", unpack=True)
-
-    print("Minimum is:", np.min(log_T90))
-    print("Maximum is:", np.max(log_T90))
-    print("Difference minimum is:", np.min(np.diff(log_T90)))
     
     nbins = 50
     bins = np.linspace(-4, 7, nbins)
-    print(f"A bin is large {np.diff(bins)[0]:.2e}")
     hist, edges = np.histogram(log_T90, bins = bins, density = True)    # used in plot
     counts, _ = np.histogram(log_T90, bins = bins)                      # used for the real analysis
     center = (edges[1:] + edges[:-1])*0.5
@@ -232,7 +227,6 @@ if __name__ == "__main__":
                         rng.uniform(0.01,3),
                         rng.uniform(-4,7),
                         rng.uniform(0.01,3)])
-    theta_fit = np.array([0.4, -0.5, 1.5, 3.6, 0.8])
     
     xx = np.linspace(-4,7,256)
     dx = np.diff(xx)[0]
@@ -247,7 +241,7 @@ if __name__ == "__main__":
     # plot the data
     fig0 = plt.figure("Data")
     ax = fig0.add_subplot(111)
-    ax.plot(xx, data_n, 'r', alpha = 0.6, label = "Data with uncertainties")
+    ax.plot(xx, data_n, color='tomato', alpha = 0.6, label = "Data with uncertainties")
     ax.stairs(hist, edges, color = 'C0', label = 'Data', linewidth = 1.5)
     ax.set_xlabel("$\\log(T_{90})$")
     ax.set_ylabel("Normalized counts")
@@ -255,6 +249,8 @@ if __name__ == "__main__":
     ax.grid(linestyle = 'dashed')
     ax.set_axisbelow(True)
     plt.legend()
+    plt.show()
+    exit()
 
 
     # try to initialise things
@@ -398,11 +394,11 @@ if __name__ == "__main__":
     # plot the data with the best fit
     fig6 = plt.figure("Data and model")
     ax = fig6.add_subplot(111)
-    ax.plot(xx, data_n, color = 'C0', label = 'Data')
+    ax.plot(xx, data_n, color = 'C0', label = 'Data', linewidth=1.5)
     ax.plot(xx, pdf, 'r', label = "Model", zorder = 4)
-    ax.fill_between(xx, h, l, facecolor='tomato', alpha = 0.5)
-    ax.plot(xx, w_normal_1, 'g', label = "Norm 1", alpha = 0.5)
-    ax.plot(xx, w_normal_2, color = 'orange', label = "Norm 2", alpha = 0.5)
+    ax.fill_between(xx, h, l, facecolor='salmon', alpha = 0.5, label="90% confidence")
+    ax.plot(xx, w_normal_1, 'g', label = "Norm 1", alpha = 0.75)
+    ax.plot(xx, w_normal_2, color = 'darkorange', label = "Norm 2", alpha = 0.75)
     ax.set_xlabel("$\\log(T_{90})$")
     ax.set_ylabel("Normalized Counts")
     ax.set_ylim([0,0.395])
@@ -411,7 +407,10 @@ if __name__ == "__main__":
     plt.legend()
 
     # end of first point: save, show or close all the open figures
-    """
+    
+    plt.show()
+    exit()
+
     fig0.savefig(main_dir+"\\Results\\1b\\Err_Dataset.png", dpi = 600)
     fig1.savefig(main_dir+"\\Results\\1b\\Err_Parameters_chain.png", dpi = 600)
     fig2.savefig(main_dir+"\\Results\\1b\\Err_Parameters_chain_zoom.png", dpi = 600)
@@ -426,7 +425,3 @@ if __name__ == "__main__":
 
     header = "model w_normal_1 w_normal_2"
     np.savetxt(main_dir+"\\Results\\1b\\Err_model_values.txt", np.array([pdf, w_normal_1, w_normal_2]).T, header=header)
-    """
-    
-    #plt.show()
-    #plt.close('all')
