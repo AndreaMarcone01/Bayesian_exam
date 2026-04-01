@@ -68,22 +68,22 @@ if __name__ == "__main__":
     print(f"Probability that is long: {prob_long_at_T:.3f}")
     print(f"Probability that is long or short: {prob_short_at_T+prob_long_at_T}")
 
-    plt.figure("Model with GRB to classifying")
-    plt.plot(xx, pdf, 'r', label = "Model")
-    plt.axvline(log_T, color = 'k', label = "GRB170817A", linestyle = 'dashed')
-    plt.plot(xx, w_normal_1, 'g', label = "Norm 1", alpha = 0.5)
-    plt.plot(xx, w_normal_2, color = 'orange', label = "Norm 2", alpha = 0.5)
-    plt.xlabel("$\\log(T_{90})$")
-    plt.ylabel("Normalized Counts")
-    plt.ylim(bottom=0)
+    fig_class = plt.figure("Model with GRB to classifying")
+    ax = fig_class.add_subplot(111)
+    ax.axvline(log_T, color = 'k', label = "GRB170817A", linestyle = 'dashed', zorder=4)
+    ax.plot(xx, pdf, 'r', label = "Model")
+    ax.plot(xx, w_normal_1, 'g', label = "Norm 1", alpha = 0.75)
+    ax.plot(xx, w_normal_2, color = 'darkorange', label = "Norm 2", alpha = 0.75)
+    ax.set_xlabel("$\\log(T_{90})$")
+    ax.set_ylabel("Probability")
+    ax.set_ylim(bottom=0)
+    ax.grid(linestyle = 'dashed')
+    ax.set_axisbelow(True)
     plt.legend()
-    plt.grid(linestyle = 'dashed')
-    plt.savefig(main_dir+"\\Results\\GRB_to_class.png")
 
     # Point 3: decide a figure of merit for the transition between long and short GRBs
     prob_short = w_normal_1/pdf
     prob_long = w_normal_2/pdf
-    delta = np.abs(prob_short-prob_long)
 
     # find the transition point
     log_T_trans_plus = xx[prob_short < prob_long][0]
@@ -91,29 +91,39 @@ if __name__ == "__main__":
     log_T_trans = np.mean([log_T_trans_minus, log_T_trans_plus])
     print(f"The transition point is at logT = {log_T_trans:.2f}, so for T = {np.exp(log_T_trans):.2f} s")
 
-    begin_p = xx[delta<0.9][0]
-    delta_p = delta[xx<begin_p]
-    begin_m = xx[xx<begin_p][delta_p>0.9][-1]
+    # transition with delta as fraction? How much difference we want?
+    T = 100                             # threshold for transition
+    delta = prob_short/prob_long        # fraction of probabilities
+
+    begin_p = xx[delta<T][0]                    # first x with delta<T
+    begin_m = xx[xx<begin_p][-1]                # last x with delta>T
     begin = np.mean([begin_p, begin_m])
     print(f"The transition begins at logT = {begin:.2f}, so T = {np.exp(begin):.2f} s")
 
-    end_m = xx[delta<0.9][-1]
-    delta_m = delta[xx>end_m]
-    end_p = xx[xx>end_m][delta_m>0.9][0]
+    end_m = xx[delta>1/T][-1]                   # last point with delta>1/T
+    end_p = xx[xx>end_m][0]                     # first point with delta>1/T
     end = np.mean([end_p, end_m])
     print(f"The transition ends at logT = {end:.2f}, so T = {np.exp(end):.2f} s")
 
-    plt.figure("Probabilities for the two class of GRB")
-    plt.plot(xx, prob_short, 'g', label = "P short")
-    plt.plot(xx, prob_long, color = 'orange', label = "P long")
-    plt.axvline(log_T_trans, color = 'r', label = "Threshold", linestyle = 'dashed')
-    plt.axvline(begin, color = 'b', linestyle = 'dashed', alpha = 0.5)
-    plt.axvline(end, color = 'b', label = "Transition", linestyle = 'dashed', alpha = 0.5)
-    plt.xlabel("$\\log(T_{90})$")
-    plt.xlim([-4,7])
-    plt.ylabel("Probability")
-    plt.grid(linestyle = 'dashed')
+
+    fig_prob = plt.figure("Probabilities for the two class of GRB")
+    ax = fig_prob.add_subplot(111)
+    ax.plot(xx, prob_short, 'g', label = "P short")
+    ax.plot(xx, prob_long, color = 'darkorange', label = "P long")
+    ax.axvline(log_T_trans, color = 'r', label = "Threshold", linestyle = 'dashed')
+    ax.axvline(begin, color = 'b', linestyle = 'dashdot', alpha = 0.5)
+    ax.axvline(end, color = 'b', label = "Transition", linestyle = 'dashdot', alpha = 0.5)    
+    ax.set_xlabel("$\\log(T_{90})$")
+    ax.set_xlim([-4,7])
+    ax.set_ylabel("Probability")
+    ax.grid(linestyle = 'dashed')
+    ax.set_axisbelow(True)
     plt.legend()
-    plt.savefig(main_dir+"\\Results\\Prob_of_class.png")
     
+    # end of point, show and or save images
+
     plt.show()
+    exit()
+
+    fig_class.savefig(main_dir+"\\Results\\GRB_to_class.png", dpi = 600)
+    fig_prob.savefig(main_dir+"\\Results\\Prob_of_class.png", dpi = 600)

@@ -424,8 +424,8 @@ if __name__ == "__main__":
 
     # end of point: save, show or close all the open figures
     
-    #plt.show()
-    #exit()
+    plt.show()
+    exit()
 
     fig0.savefig(main_dir+"\\Results\\1b\\Err_Dataset.png", dpi = 600)
     fig1.savefig(main_dir+"\\Results\\1b\\Err_Parameters_chain.png", dpi = 600)
