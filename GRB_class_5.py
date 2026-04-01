@@ -22,25 +22,30 @@ def gauss(x, mu, sigma):
 
 class state():
     def __init__(self, N_cluster, data, mu_0, alpha, rng):
+        # compute some suff_stats that can't be done in a line
+        # random initial assignment
         vec_z = rng.choice(N_cluster, size=data.shape[0])
         identity = np.diag(np.full(data.shape[1],1))
                 
-        # compute some suff_stats that can't be done in a line
+        # given the assignments first bar_x_k
         bar_x_k = np.zeros((N_cluster, data.shape[1]))      # first index 0=log_T, 1=log_HR, second index = k
         for k in range(N_cluster):
             bar_x_k[k] = np.mean(data[vec_z == k], axis = 0)
 
+        # check that the dimentions are right
         if bar_x_k.shape != mu_0.shape:
             print("Something is wrong, check the initial mu_0!")
             print("Exiting...")
             exit()
 
+        # initial scatter matrix
         S_k = np.zeros((N_cluster, data.shape[1], data.shape[1]))
         for k in range(N_cluster):
             data_k = data[vec_z==k]
             diff = data_k - data_k.mean(axis=0)
             S_k[k] =  diff.T @ diff 
 
+        # dictionary with important stuff. Trailing underscore means that the quantity is constant
         self.state = {
             "N_cluster_": N_cluster,                                    # number of cluster (=3)
             "cluster_id_": range(N_cluster),                            # id of cluster [0,1,2]
@@ -53,55 +58,17 @@ class state():
                 "nu_0": np.full(N_cluster, 8),                          # nu_0 d.o.f. must be >d-1 
                 "alpha": alpha                                          # starting alpha for dirichlet 
             },
-            "alpha_0": np.full(N_cluster, alpha/N_cluster),             # first values of alpha_k
+            "alpha_0_": np.full(N_cluster, alpha/N_cluster),            # first values of alpha_k
+            # this are the parts that will change
             "vec_z": vec_z,                                             # first random assignment
             "steps_done": 0,                                            # counter of steps done
             "suff_stats": {                                             # store the quantities to compute the posterior parameters
-                "N_k": np.array([np.sum(vec_z==k) for k in range(N_cluster)]),              # first count of points for cluster
-                "bar_x_k": bar_x_k,                                    # mean of data for cluster
-                "S_k": S_k                            # compute the scatter matrix
+                "N_k": np.array([np.sum(vec_z==k) for k in range(N_cluster)]),      # count of points for cluster
+                "bar_x_k": bar_x_k,                                                 # mean of data for cluster
+                "S_k": S_k                                                          # the scatter matrix
             },
-            "log_joint_p": np.nan
+            "log_joint_p": np.nan                                       # log of joint probabilty 
         }
-
-    def assign_new_zi(self, index):
-        # calculate the new probability of assign point i to the clusters
-        prob_zi = np.zeros(self.state["N_cluster_"])
-        self.remove_suff_stats(index)           # update all the suff stat without point i
-        for k in self.state["cluster_id_"]:
-            first_term = (self.state["alpha_0"][k] + self.state["suff_stats"]["N_k"][k])/(self.state["hyperparameters_"]["alpha"] + self.state["N_data_"] - 1)
-            k_n, nu_n, mu_n, Psi_n = self.posterior_parameters()
-            multivariate_t_n = multivariate_t(mu_n[k], (k_n[k]+1)/(k_n[k]*nu_n[k]) * Psi_n[k], df=nu_n[k]-2+1)
-            second_term = multivariate_t_n.pdf(self.state["data_"][index])
-            prob_zi[k] = first_term * second_term
-        # normalize the probabilities
-        prob_zi = prob_zi / np.sum(prob_zi)
-        # assign the new z_i for the point
-        new_k = rng.choice(self.state["N_cluster_"], p=prob_zi)
-        # re add the point removed 
-        self.state["vec_z"][index] = new_k
-        self.add_suff_stats(new_k)
-
-    def remove_suff_stats(self,index):
-        kk = self.state["vec_z"][index]
-        data_removed = np.delete(self.state["data_"], index, axis = 0)
-        vec_z = np.delete(self.state["vec_z"], index)
-        # update the suff_stats
-        self.state["suff_stats"]["N_k"][kk] -= 1
-        self.state["suff_stats"]["bar_x_k"][kk] = np.mean(data_removed[vec_z==kk], axis = 0)
-        data_k = data_removed[vec_z==kk]
-        diff = data_k - data_k.mean(axis=0)
-        self.state["suff_stats"]["S_k"][kk] = diff.T @ diff
-        
-    def add_suff_stats(self, kk):
-        # update the suff_stats of cluster kk
-        data = self.state["data_"]
-        vec_z = self.state["vec_z"]
-        self.state["suff_stats"]["N_k"][kk] += 1
-        self.state["suff_stats"]["bar_x_k"][kk] = np.mean(data[vec_z==kk], axis = 0)
-        data_k = data[vec_z==kk]
-        diff = data_k - data_k.mean(axis=0)
-        self.state["suff_stats"]["S_k"][kk] = diff.T @ diff
 
     def posterior_parameters(self):
         # compute the posterior parameters
@@ -117,6 +84,44 @@ class state():
             Psi_n[k] = hyper["Psi_0"][k] + suff["S_k"][k] + hyper["k_0"][k]/k_n[k] * suff["N_k"][k] * np.outer((suff["bar_x_k"][k] - hyper["mu_0"][k]), (suff["bar_x_k"][k] - hyper["mu_0"][k]))
         
         return k_n, nu_n, mu_n, Psi_n
+
+    def remove_suff_stats(self,index):
+        # update the suff stats removing the point index
+        kk = self.state["vec_z"][index]
+        data_removed = np.delete(self.state["data_"], index, axis = 0)
+        vec_z = np.delete(self.state["vec_z"], index)
+        # update the suff_stats
+        self.state["suff_stats"]["N_k"][kk] -= 1
+        self.state["suff_stats"]["bar_x_k"][kk] = np.mean(data_removed[vec_z==kk], axis = 0)
+        data_k = data_removed[vec_z==kk]
+        diff = data_k - data_k.mean(axis=0)
+        self.state["suff_stats"]["S_k"][kk] = diff.T @ diff
+        
+    def add_suff_stats(self, k_cluster):
+        # update the suff_stats of cluster k
+        data_k = self.state["data_"][self.state["vec_z"]==k_cluster]
+        self.state["suff_stats"]["N_k"][k_cluster] += 1
+        self.state["suff_stats"]["bar_x_k"][k_cluster] = np.mean(data_k, axis = 0)
+        diff = data_k - data_k.mean(axis=0)
+        self.state["suff_stats"]["S_k"][k_cluster] = diff.T @ diff
+
+    def assign_new_zi(self, index):
+        # calculate the new probability of assign point i to the clusters
+        prob_zi = np.zeros(self.state["N_cluster_"])
+        self.remove_suff_stats(index)           # update all the suff stat without point i
+        for k in self.state["cluster_id_"]:
+            first_term = (self.state["alpha_0_"][k] + self.state["suff_stats"]["N_k"][k])/(self.state["hyperparameters_"]["alpha"] + self.state["N_data_"] - 1)
+            k_n, nu_n, mu_n, Psi_n = self.posterior_parameters()
+            multivariate_t_n = multivariate_t(mu_n[k], (k_n[k]+1)/(k_n[k]*nu_n[k]) * Psi_n[k], df=nu_n[k]-2+1)
+            second_term = multivariate_t_n.pdf(self.state["data_"][index])
+            prob_zi[k] = first_term * second_term
+        # normalize the probabilities
+        prob_zi = prob_zi / np.sum(prob_zi)
+        # assign the new z_i for the point
+        new_k = rng.choice(self.state["N_cluster_"], p=prob_zi)
+        # re add the point removed 
+        self.state["vec_z"][index] = new_k
+        self.add_suff_stats(new_k)
     
     def joint_prob(self):
         # compute the joint probability of the actual state of the sampler
@@ -127,7 +132,7 @@ class state():
             first_term += multivariate_t(mu_n[k], (k_n[k]+1)/(k_n[k]*nu_n[k]) * Psi_n[k], df=nu_n[k]-2+1).logpdf(self.state["data_"][i])
         second_term = 0
         for k in self.state["cluster_id_"]:
-            second_term += math.lgamma(self.state["suff_stats"]["N_k"][k] + self.state["alpha_0"][k])
+            second_term += math.lgamma(self.state["suff_stats"]["N_k"][k] + self.state["alpha_0_"][k])
         return first_term+second_term
     
     def make_a_step(self):
@@ -351,7 +356,7 @@ if __name__ == "__main__":
     plt.legend(handles=legend_elements)
     """
 
-    par_name = ["mu_T", "sigma_T", "mu_HR", "sigma_HR", "rho"]
+    par_name = ["$\\mu_T$", "$\\sigma_T$", "$\\mu_\{HR\}$", "$\\sigma_\{HR\}", "\\rho"]
     thinning = 20
     # autocorrelation for each set of parameters
     fig3 = plt.figure("Parameters autocorrelation ("+str(N_cluster)+" clusters)", figsize = (6,6))
@@ -419,9 +424,8 @@ if __name__ == "__main__":
         ax_leg = fig4.add_subplot(3,2,6)
         legend_elements = [
             Line2D([0], [0], color='C0', linewidth=1.5, label='Marginalized posterior samples'),
-            Line2D([0], [0], color='r', linestyle='dashed', label='Prior'),
             Line2D([0], [0], color='green', linestyle='dashed', label='Median value'),
-            Line2D([0], [0], color='orange', linestyle='dashed', label='Median value $\\pm\\sigma$'),]
+            Line2D([0], [0], color='orange', linestyle='dashed', label='90% confidence interval'),]
         ax_leg.legend(handles=legend_elements, loc='center')
         ax_leg.axis('off')  # Hide axes, ticks, spines and background
         plt.tight_layout()
@@ -435,38 +439,8 @@ if __name__ == "__main__":
             fig_hist_par_2 = fig4
 
     # confidence levels in the plane
-    from matplotlib.patches import Ellipse, PathPatch
-    from matplotlib.path import Path
-    import matplotlib.transforms as transforms
-    scale = 2       # how many sigmas we want to represent? scale = 2 has ~68% of data 
-
-    fig5 = plt.figure("Clusters in plane log_T, log_HR")
-    ax = fig5.add_subplot(111)
-    for k in range(N_cluster):
-        #data_k = sampler.state["data_"][vec_z == k]
-        #ax.scatter(data_k[:,0], data_k[:,1], marker = '.', color = cluster_color[k], label = "Cluster number "+str(k), zorder = 1, alpha=0.25)
-        for i in range(len(par_mu_T[0,:])):
-            center = np.array([par_mu_T[k,i], par_mu_HR[k,i]])
-            ax.scatter(center[0], center[1], marker = '.', color = cluster_color[k], zorder = 1, alpha=0.05)
-            Sigma = np.array([[par_sigma_T[k,i]**2, par_rho[k,i]*par_sigma_T[k,i]*par_sigma_HR[k,i]],
-                              [par_rho[k,i]*par_sigma_T[k,i]*par_sigma_HR[k,i], par_sigma_HR[k,i]**2]])
-            eigval, eigvec = np.linalg.eigh(Sigma)
-            angle = np.arctan2(eigvec[1,1], eigvec[0,1]) * 180/np.pi    # rotation angle
-            width = scale*2*np.sqrt(eigval[-1])                               # major axis
-            height = scale*2*np.sqrt(eigval[0])                               # minor axis
-            # last one with label
-            if i == len(par_mu_T[0,:])-1:
-                ellipse = Ellipse(xy=center, width=width, height=height, angle=angle, fill=False, color=cluster_color[k], alpha=0.05, label = "68% confidence area", zorder=2)
-            else:
-                ellipse = Ellipse(xy=center, width=width, height=height, angle=angle, fill=False, color=cluster_color[k], alpha=0.05, zorder=2)
-            ax.add_patch(ellipse)
-    ax.set_xlabel("$\\log(T_{90})$")
-    ax.set_xlim(-4,7)
-    ax.set_ylabel("$\\log(HR)$")
-    ax.set_ylim(-2.5,3.5)
-    ax.grid(linestyle = 'dashed')
-    ax.set_axisbelow(True)
-    plt.legend()        
+    from matplotlib.patches import Ellipse
+    scale = 2       # how many sigmas we want to represent? scale = 2 has ~68% of data     
 
     # function to draw confidence leves around ellipses
     def draw_band(ax, center, width_out, height_out, width_in, height_in, angle, color, alpha=0.4, zorder=2):
@@ -517,7 +491,7 @@ if __name__ == "__main__":
         # 95% ellipse
         ellipse = Ellipse(xy=c_m,  width=width[2], height=height[2], angle=angle_m, fill=False, color = conf_color[k], linestyle='dashed')
         ax.add_patch(ellipse)
-        
+        # draw the confidence band
         draw_band(ax, c_m, width[2], height[2], width[0], height[0], angle_m, conf_color[k], alpha=0.5, zorder=2)
 
         # median ellipse
