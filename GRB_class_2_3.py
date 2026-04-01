@@ -92,16 +92,16 @@ if __name__ == "__main__":
     print(f"The transition point is at logT = {log_T_trans:.2f}, so for T = {np.exp(log_T_trans):.2f} s")
 
     # transition with delta as fraction? How much difference we want?
-    T = 100                             # threshold for transition
+    Tr = 10                             # threshold for transition
     delta = prob_short/prob_long        # fraction of probabilities
 
-    begin_p = xx[delta<T][0]                    # first x with delta<T
-    begin_m = xx[xx<begin_p][-1]                # last x with delta>T
+    begin_p = xx[delta<Tr][0]                    # first x with delta<Tr
+    begin_m = xx[xx<begin_p][-1]                # last x with delta>Tr
     begin = np.mean([begin_p, begin_m])
     print(f"The transition begins at logT = {begin:.2f}, so T = {np.exp(begin):.2f} s")
 
-    end_m = xx[delta>1/T][-1]                   # last point with delta>1/T
-    end_p = xx[xx>end_m][0]                     # first point with delta>1/T
+    end_m = xx[delta>1/Tr][-1]                   # last point with delta>1/Tr
+    end_p = xx[xx>end_m][0]                     # first point with delta>1/Tr
     end = np.mean([end_p, end_m])
     print(f"The transition ends at logT = {end:.2f}, so T = {np.exp(end):.2f} s")
 
@@ -123,7 +123,7 @@ if __name__ == "__main__":
     # end of point, show and or save images
 
     plt.show()
-    exit()
+    #exit()
 
     fig_class.savefig(main_dir+"\\Results\\GRB_to_class.png", dpi = 600)
     fig_prob.savefig(main_dir+"\\Results\\Prob_of_class.png", dpi = 600)
