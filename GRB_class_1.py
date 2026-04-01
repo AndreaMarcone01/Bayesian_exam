@@ -86,10 +86,10 @@ def log_likelihood(theta, counts, center, model):
     
     N = np.sum(counts)
     dx = np.diff(center)[0]
-    expected_count = model(center, theta) 
+    expected_count = model(center, theta) * N * dx
 
     if np.any((expected_count == 0) & (counts > 0)):       # if expected == 0 we have a nan problem, but if also counts == 0 it's right
-            return -np.inf                                          # in the case that the model sees 0 counts but in realty there are return -inf
+            return -np.inf                                 # in the case that the model sees 0 counts but in realty there are return -inf
         
     log_like = xlogy(counts, expected_count) - expected_count
     return np.sum(log_like)

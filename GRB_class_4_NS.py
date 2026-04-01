@@ -128,8 +128,7 @@ if __name__ == "__main__":
     
     nbins = 50
     bins = np.linspace(-4, 7, nbins)
-    hist, edges = np.histogram(log_T90, bins = bins, density = True)    # used in plot
-    counts, _ = np.histogram(log_T90, bins = bins)                      # used for the real analysis
+    counts, edges = np.histogram(log_T90, bins = bins)                 
     center = (edges[1:] + edges[:-1])*0.5
 
     name2 = ["w", "mu_1", "sigma_1", "mu_2", "sigma_2"]
