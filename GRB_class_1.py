@@ -404,7 +404,7 @@ if __name__ == "__main__":
         Line2D([0], [0], color='C0', linewidth=1.5, label='Marginalized posterior samples'),
         #Line2D([0], [0], color='r', linestyle='dashed', label='Prior'),
         Line2D([0], [0], color='green', linestyle='dashed', label='Median value'),
-        Line2D([0], [0], color='orange', linestyle='dashed', label='Median value $\\pm\\sigma$')]
+        Line2D([0], [0], color='orange', linestyle='dashed', label='90% confidence interval')]
     ax_leg.legend(handles=legend_elements, loc='center')
     ax_leg.axis('off')  # Hide axes, ticks, spines and background
     plt.tight_layout()
@@ -434,7 +434,7 @@ if __name__ == "__main__":
     # end of first point: show, save or close all the open figures
 
     plt.show()
-    exit()
+    #exit()
 
     fig1.savefig(main_dir+"\\Results\\1a\\Parameters_chain.png", dpi = 600)
     fig2.savefig(main_dir+"\\Results\\1a\\Parameters_chain_zoom.png", dpi = 600)
