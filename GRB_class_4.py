@@ -98,8 +98,7 @@ if __name__ == "__main__":
     
     nbins = 50
     bins = np.linspace(-4, 7, nbins)
-    hist, edges = np.histogram(log_T90, bins = bins, density = True)    # used in plot
-    counts, _ = np.histogram(log_T90, bins = bins)                      # used for the real analysis
+    counts, edges = np.histogram(log_T90, bins = bins)                      # used for the real analysis
     center = (edges[1:] + edges[:-1])*0.5
 
     name2_l = ["$w$", "$\\mu_1$", "$\\sigma_1$", "$\\mu_2$", "$\\sigma_2$"]
@@ -344,7 +343,8 @@ if __name__ == "__main__":
     ax.set_xlabel("Iteration")
     plt.tight_layout()
     
-    # honestly burn-in = 0
+    burnin = 100
+    samples2 = samples2[burnin:,:]
 
     # look at autocorrelation for theta
     fig = plt.figure("J Parameters autocorrelation 2", figsize = (6,6))
@@ -355,8 +355,10 @@ if __name__ == "__main__":
     ax.set_xlabel("Iteration")
     plt.tight_layout()
     
-    thinning = 10
+    thinning = 15
     parameters = samples2[::thinning,:]
+
+    print(f"2 class: after burn-in and thinning we have {len(parameters[:,0])} samples")
 
     # find peaks and credible interval
     par_val = np.zeros(len(name2))
@@ -376,15 +378,6 @@ if __name__ == "__main__":
             ax = fig1.add_subplot(3, 2, i+1)
         counts_i, bins_i = np.histogram(parameters[:,i], bins = 30, density=True)
         ax.stairs(counts_i, bins_i, color = 'C0', linewidth = 1.5, baseline=0)
-        # plot the priors, Jeffrey for sigmas and uniform for others
-        if i == 2 or i == 4:
-            a = bounds2[i][0]
-            b = bounds2[i][1]
-            ss = np.linspace(a, b, 100)
-            ax.plot(ss, 1/(np.log(b/a) * ss), color = 'r', linestyle='dashed')
-        else:
-            ax.axhline(1/(bounds2[i][1] - bounds2[i][0]), color = 'r', linestyle='dashed')
-
         ax.axvline(par_val[i], color = 'green', linestyle='dashed')
         ax.axvline(par_val[i]+d_par_plus[i], color = 'orange', linestyle='dashed')
         ax.axvline(par_val[i]-d_par_minus[i], color = 'orange', linestyle='dashed')
@@ -398,9 +391,9 @@ if __name__ == "__main__":
     from matplotlib.lines import Line2D
     legend_elements = [
         Line2D([0], [0], color='C0', linewidth=1.5, label='Marginalised posterior samples'),
-        Line2D([0], [0], color='r', linestyle='dashed', label='Prior'),
+        #Line2D([0], [0], color='r', linestyle='dashed', label='Prior'),
         Line2D([0], [0], color='green', linestyle='dashed', label='Median value'),
-        Line2D([0], [0], color='orange', linestyle='dashed', label='Median value $\\pm\\sigma$'),
+        Line2D([0], [0], color='orange', linestyle='dashed', label='90% confidence interval'),
     ]
     ax_leg.legend(handles=legend_elements, loc='center')
     ax_leg.axis('off')  # Hide axes, ticks, spines and background
@@ -408,24 +401,29 @@ if __name__ == "__main__":
 
     
     posterior_models = [weighted_log_normal(xx, s) for s in parameters]
-    l, pdf2, h = np.percentile(posterior_models,[16,50,84],axis=0)
+    l, pdf2, h = np.percentile(posterior_models,[5,50,95],axis=0)
     w_normal_1 = np.percentile([s[0] * gauss(xx, s[1], s[2]) for s in parameters], 50, axis=0)
     w_normal_2 = np.percentile([(1-s[0]) * gauss(xx, s[3], s[4]) for s in parameters], 50, axis=0)
 
+    scale = np.diff(bins)[0]*np.sum(counts)
     # plot the data with the best fit
     fig2 = plt.figure("J Data and model 2")
-    plt.stairs(hist, edges, color = 'C0', label = 'Data')
-    plt.plot(xx, pdf2, 'r', label = "Model")
-    plt.fill_between(xx, h, l, facecolor='tomato', alpha = 0.5)
-    plt.plot(xx, w_normal_1, 'g', label = "Norm 1", alpha = 0.5)
-    plt.plot(xx, w_normal_2, color = 'orange', label = "Norm 2", alpha = 0.5)
-    plt.xlabel("$\\log(T_{90})$")
-    plt.ylabel("Normalized Counts")
+    ax = fig2.add_subplot(111)
+    ax.stairs(counts, edges, color = 'C0', label = 'Data', linewidth=1.5, zorder =1)
+    ax.plot(xx, pdf2*scale, 'r', label = "Model",zorder=4)
+    ax.fill_between(xx, h*scale, l*scale, facecolor='salmon', alpha = 0.5, label="90% confidence", zorder =2)
+    ax.plot(xx, w_normal_1*scale, 'g', label = "Norm 1", alpha = 0.75, zorder = 3)
+    ax.plot(xx, w_normal_2*scale, color = 'darkorange', label = "Norm 2", alpha = 0.75, zorder = 3)
+    ax.set_xlabel("$\\log(T_{90})$")
+    ax.set_ylabel("Counts")
+    ax.set_ylim([0,170])
+    ax.grid(linestyle = 'dashed')
+    ax.set_axisbelow(True)
     plt.legend()
-    plt.grid(linestyle = 'dashed')
 
     #store the parameters result with a different name to eventually save at end of file
     save2 = np.array([par_val, d_par_plus, d_par_minus]).T
+
 
     # now all again for model with 3 class
     samples3 = samples3[()]
@@ -454,9 +452,11 @@ if __name__ == "__main__":
     ax.set_xlabel("Iteration")
     plt.tight_layout()
     
-    thinning = 10
+    thinning = 15
     sample = samples3[burnin:,:]
     parameters = sample[::thinning,:]
+    print(f"3 class: after burn-in and thinning we have {len(parameters[:,0])} samples")
+
 
     # find peaks and credible interval
     par_val = np.zeros(len(name3))
@@ -488,7 +488,7 @@ if __name__ == "__main__":
             ax.axhline(1/(bounds3[i][1] - bounds3[i][0]), color = 'r', label = "Prior", linestyle='dashed')
         ax.axvline(par_val[i], color = 'g', label = "Median value", linestyle='dashed')
         ax.axvline(par_val[i]+d_par_plus[i], color = 'orange', linestyle='dashed')
-        ax.axvline(par_val[i]-d_par_minus[i], color = 'orange', label = "Peak value $\\pm\\sigma$", linestyle='dashed')
+        ax.axvline(par_val[i]-d_par_minus[i], color = 'orange', label = "90% confidence interval", linestyle='dashed')
         ax.set_xlabel(name3_l[i])
         delta = 2*np.diff(bins_i)[0]
         ax.set_xlim(np.min(bins_i)-delta, np.max(bins_i)+delta)
@@ -503,31 +503,44 @@ if __name__ == "__main__":
     w_normal_3 = np.percentile([(1-s[0]-s[7]) * gauss(xx, s[5], s[6]) for s in parameters], 50, axis=0)
 
     # plot the data with the best fit
+    scale = np.diff(bins)[0]*np.sum(counts)
+    # plot the data with the best fit
     fig4 = plt.figure("J Data and model 3")
-    plt.stairs(hist, edges, color = 'C0', label = 'Data')
-    plt.plot(xx, pdf3, 'r', label = "Model")
-    plt.fill_between(xx, h, l, facecolor='tomato', alpha = 0.5)
-    plt.plot(xx, w_normal_1, 'g', label = "Norm 1", alpha = 0.5)
-    plt.plot(xx, w_normal_2, 'purple', label = "Norm 2", alpha = 0.5)
-    plt.plot(xx, w_normal_3, color = 'orange', label = "Norm 3", alpha = 0.5)
-    plt.xlabel("$\\log(T_{90})$")
-    plt.ylabel("Normalized Counts")
+    ax = fig4.add_subplot(111)
+    ax.stairs(counts, edges, color = 'C0', label = 'Data', linewidth=1.5, zorder =1)
+    ax.plot(xx, pdf3*scale, 'r', label = "Model",zorder=4)
+    ax.fill_between(xx, h*scale, l*scale, facecolor='salmon', alpha = 0.5, label="90% confidence", zorder =2)
+    ax.plot(xx, w_normal_1*scale, 'g', label = "Norm 1", alpha = 0.75, zorder = 3)
+    ax.plot(xx, w_normal_2*scale, color = 'purple', label = "Norm 2", alpha = 0.75, zorder = 3)
+    ax.plot(xx, w_normal_3*scale, color = 'darkorange', label = "Norm 3", alpha = 0.75, zorder = 3)
+    ax.set_xlabel("$\\log(T_{90})$")
+    ax.set_ylabel("Counts")
+    ax.set_ylim([0,170])
+    ax.grid(linestyle = 'dashed')
+    ax.set_axisbelow(True)
     plt.legend()
-    plt.grid(linestyle = 'dashed')
     
+    plt.close('all')
     
     # plot the data with the two best fit
     fig5 = plt.figure("J Data and the two models")
-    plt.stairs(hist, edges, color = 'C0', label = 'Data')
-    plt.plot(xx, pdf2, 'k', label = "Model with 2 classes")
-    plt.plot(xx, pdf3, 'r', label = "Model with 3 classes")
-    plt.xlabel("$\\log(T_{90})$")
-    plt.ylabel("Normalized Counts")
+    ax = fig5.add_subplot(111)
+    ax.stairs(counts, edges, color = 'C0', label = 'Data', linewidth=1.5, zorder =1)
+    #ax.fill_between(xx, pdf2*scale, pdf3*scale, color = 'g', alpha = 0.5)
+    ax.plot(xx, pdf2*scale, 'k', label = "Model with 2 classes", zorder = 3)
+    ax.plot(xx, pdf3*scale, 'r', label = "Model with 3 classes", zorder = 2)
+    ax.set_xlabel("$\\log(T_{90})$")
+    ax.set_ylabel("Counts")
+    ax.grid(linestyle = 'dashed')
+    ax.set_axisbelow(True)
     plt.legend()
-    plt.grid(linestyle = 'dashed')
-    
+
+
     # save the results
-    """
+    
+    plt.show()
+    exit()
+
     header = "par_val d_par_plus d_par_minus"
     # from the 2 class analysis
     fig1.savefig(main_dir+"\\Results\\NS\\J_2_Parameters_histogram.png", dpi = 600)
@@ -541,5 +554,3 @@ if __name__ == "__main__":
 
     # both models
     fig5.savefig(main_dir+"\\Results\\NS\\J_Model_both.png", dpi = 600)
-    """
-    #plt.show()

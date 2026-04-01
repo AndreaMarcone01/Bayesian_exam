@@ -123,7 +123,7 @@ if __name__ == "__main__":
     # end of point, show and or save images
 
     plt.show()
-    #exit()
+    exit()
 
     fig_class.savefig(main_dir+"\\Results\\GRB_to_class.png", dpi = 600)
     fig_prob.savefig(main_dir+"\\Results\\Prob_of_class.png", dpi = 600)
