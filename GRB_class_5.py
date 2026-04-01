@@ -191,21 +191,67 @@ if __name__ == "__main__":
 
     xx = np.linspace(-4,7,256)              # linear space on log_T
     yy = np.linspace(-2.5, 3.5, 256)        # linear space on log_HR
+
+    # define the bins
+    bins_T = np.linspace(-4, 7, 51)
+    width_T = np.diff(bins_T)[0]
+    center_T = 0.5*(bins_T[1:] + bins_T[:-1])
+    bottom_T = np.zeros(50, dtype=int)
+
+    bins_HR = np.linspace(-2.5, 3.5, 51)
+    width_HR = np.diff(bins_HR)[0]
+    center_HR = 0.5*(bins_HR[1:] + bins_HR[:-1])
+    bottom_HR = np.zeros(50, dtype=int)
     
     # try to initialise things
     # I have to define data so that data[ii] = [log_T[ii], log_HR[ii]] and see if it runs in 2D 
     data = np.array([log_T, log_HR]).T          #transpose to have format (N_point, N_dim = 2)
-    """
-    # 3 clusters    
+    
+    fig0 = plt.figure("data: logT-logHR plane and marginals")
+    ax  = fig0.add_subplot(111)
+    axT = ax.inset_axes([0, 1.05, 1, 0.25], sharex=ax)
+    axH = ax.inset_axes([1.05, 0, 0.25, 1], sharey=ax)
+    # plot the main plane
+    ax.scatter(data[:,0], data[:,1], marker = '.', color = 'C0', label = "Data")
+    ax.set_xlabel("$\\log(T_{90})$")
+    ax.set_xlim(-4,7)
+    ax.set_ylabel("$\\log(HR)$")
+    ax.set_ylim(-2.5,3.5)
+    ax.grid(linestyle = 'dashed')
+    ax.set_axisbelow(True)
+    # plot the marginal histograms
+    count, _ = np.histogram(data[:,0], bins_T)
+    axT.bar(center_T, count, width_T, color = 'C0')
+    count, _ = np.histogram(data[:,1], bins_HR)
+    axH.barh(center_HR, count, width_HR, color = 'C0')
+    # set the right ticks and labels for histograms
+    axT.set_ylabel("Counts")
+    axH.set_xlabel("Counts")
+    axT.tick_params(axis="x", labelbottom=False)
+    axH.tick_params(axis="y", labelleft=False)
+    axT.grid(linestyle = 'dashed')
+    axT.set_axisbelow(True)
+    axH.grid(linestyle = 'dashed')
+    axH.set_axisbelow(True)
+    plt.tight_layout()
+
+    
+    # initialize sampler
+    
+    # 3 clusters
+    """    
     N_cluster = 3
     mu_0 = np.array([[-1,0],[1,0],[3.5,0]])
     cluster_color = ['g', 'purple', 'orange']
+    conf_color = ['blue', 'black', 'red']
     """
     # 2 clusters    
     N_cluster = 2
     mu_0 = np.array([[-1,0],[3.5,0]])
     cluster_color = ['g', 'orange']
+    conf_color = ['blue', 'red']
     
+
     sampler = state(N_cluster, data, mu_0=mu_0, alpha=1,rng=rng)
     _, _, mu_start, _ = sampler.posterior_parameters()
 
@@ -356,7 +402,7 @@ if __name__ == "__main__":
     plt.legend(handles=legend_elements)
     """
 
-    par_name = ["$\\mu_T$", "$\\sigma_T$", "$\\mu_\{HR\}$", "$\\sigma_\{HR\}", "\\rho"]
+    par_name = ["$\\mu_T$", "$\\sigma_T$", "$\\mu_{HR}$", "$\\sigma_{HR}$", "$\\rho$"]
     thinning = 20
     # autocorrelation for each set of parameters
     fig3 = plt.figure("Parameters autocorrelation ("+str(N_cluster)+" clusters)", figsize = (6,6))
@@ -460,18 +506,38 @@ if __name__ == "__main__":
         band = (inside_out & ~inside_in).astype(float)
         band[band == 0] = np.nan  # transparent outside
     
-        ax.contourf(xx, yy, band, levels=[0.5, 1.5], colors=[color], alpha=alpha, zorder=zorder)
+        cf = ax.contourf(xx, yy, band, levels=[0.5, 1.5], colors=[color], alpha=alpha, zorder=zorder)
+        cf.set_clip_path(ax.patch)
+       
+    bottom_T = np.zeros(center_T.shape)
+    bottom_HR = np.zeros(center_HR.shape)
 
-    conf_color = ['blue', 'red']
-    fig5b = plt.figure("Clusters in plane log_T, log_HR test")
+    # the plot
+    fig5b = plt.figure("Clusters in plane log_T log_HR")
     ax = fig5b.add_subplot(111)
+    axT = ax.inset_axes([0, 1.05, 1, 0.25], sharex=ax)
+    axH = ax.inset_axes([1.05, 0, 0.25, 1], sharey=ax)
     for k in range(N_cluster):
         data_k = sampler.state["data_"][vec_z == k]
-        ax.scatter(data_k[:,0], data_k[:,1], marker = '.', color = cluster_color[k], zorder = 1, alpha=0.25)
-
+        ax.scatter(data_k[:,0], data_k[:,1], marker = '.', color = cluster_color[k], zorder = 1, alpha=0.25, label="Cluster "+str(k))
+        count_T, _ = np.histogram(data_k[:,0], bins_T)
+        axT.bar(center_T, count_T, width_T, color = cluster_color[k], bottom=bottom_T, alpha=0.5)
+        bottom_T += count_T
+        count_HR, _ = np.histogram(data_k[:,1], bins_HR)
+        axH.barh(center_HR, count_HR, width_HR, color = cluster_color[k], left=bottom_HR, alpha=0.5)
+        bottom_HR += count_HR
+        
+        # find center of the cluster
         center = np.array([par_mu_T[k,:], par_mu_HR[k,:]]).T
         c_m = np.percentile(center, 50, axis=0)
         ax.scatter(c_m[0], c_m[1], marker = '.', color = conf_color[k], zorder = 2, alpha=1)
+        """
+        axT.plot(c_m[0], 150, marker = 'v', color = conf_color[k], zorder = 2, alpha=1)
+        axH.plot(250, c_m[1], marker = '<', color = conf_color[k], zorder = 2, alpha=1)
+        """
+        axT.axvline(c_m[0], color = conf_color[k], zorder = 2, alpha=1)
+        axH.axhline(c_m[1], color = conf_color[k], zorder = 2, alpha=1)
+        
         eig = np.zeros(center.shape)
         angle = np.zeros(center.shape[0])
         for i in range(len(par_mu_T[0,:])):
@@ -496,69 +562,46 @@ if __name__ == "__main__":
 
         # median ellipse
         ellipse = Ellipse(xy=c_m, width=width[1], height=height[1], angle=angle_m, fill=False, color=conf_color[k], alpha=1, zorder=3)
-        ax.add_patch(ellipse) 
+        ax.add_patch(ellipse)
+
+        # confidence band on the marginals, nope, too much
+        """
+        axT.axvline(c_m[0]-width[1]/2, color = conf_color[k], zorder = 2, alpha=1, linestyle='dashed') 
+        axT.axvline(c_m[0]+width[1]/2, color = conf_color[k], zorder = 2, alpha=1, linestyle='dashed') 
+        axH.axhline(c_m[1]-height[1]/2, color = conf_color[k], zorder = 2, alpha=1, linestyle='dashed') 
+        axH.axhline(c_m[1]+height[1]/2, color = conf_color[k], zorder = 2, alpha=1, linestyle='dashed') 
+        """
+    # main plane labels
     ax.set_xlabel("$\\log(T_{90})$")
     ax.set_xlim(-4,7)
     ax.set_ylabel("$\\log(HR)$")
     ax.set_ylim(-2.5,3.5)
+    ax.legend(bbox_to_anchor=(1.1, 1.05, 0.25, 0.25))
     ax.grid(linestyle = 'dashed')
     ax.set_axisbelow(True)
-    
-
-    # plane assignments and marginals
-    # define the bins
-    bins_T = np.linspace(-4, 7, 51)
-    width_T = np.diff(bins_T)[0]
-    center_T = 0.5*(bins_T[1:] + bins_T[:-1])
-    bottom_T = np.zeros(50, dtype=int)
-
-    bins_HR = np.linspace(-2.5, 3.5, 51)
-    width_HR = np.diff(bins_HR)[0]
-    center_HR = 0.5*(bins_HR[1:] + bins_HR[:-1])
-    bottom_HR = np.zeros(50, dtype=int)
-
-    # make the plot
-    fig6 = plt.figure("logT-logHR plane and marginals")
-    ax  = fig6.add_subplot(2,2,3)
-    axT = fig6.add_subplot(2,2,1, sharex = ax)
-    axH = fig6.add_subplot(2,2,4, sharey = ax)
-    for k in sampler.state["cluster_id_"]:
-        data_k = sampler.state["data_"][vec_z == k]
-        ax.scatter(data_k[:,0], data_k[:,1], marker = '.', color = cluster_color[k], label = "Cluster number "+str(k))
-        count, _ = np.histogram(data_k[:,0], bins_T)
-        axT.bar(center_T, count, width_T, color = cluster_color[k], label = "Cluster number "+str(k), bottom=bottom_T)
-        bottom_T += count
-        count, _ = np.histogram(data_k[:,1], bins_HR)
-        axH.barh(center_HR, count, width_HR, color = cluster_color[k], label = "Cluster number "+str(k), left=bottom_HR)
-        bottom_HR += count
-    ax.set_xlabel("$\\log(T_{90})$")
-    ax.set_xlim(-4,7)
-    ax.set_ylabel("$\\log(HR)$")
-    ax.set_ylim(-2.5,3.5)
-    ax.grid(linestyle = 'dashed')
-    ax.set_axisbelow(True)
+    # set the right ticks and labels for histograms
     axT.set_ylabel("Counts")
     axH.set_xlabel("Counts")
-
-    ax_leg = fig6.add_subplot(2,2,2)
-    legend_elements = []
-    for k in sampler.state["cluster_id_"]:
-        legend_elements.append(Line2D([0], [0], marker ='o',linewidth=0, color=cluster_color[k], label='Cluster '+str(k)))
-    ax_leg.legend(handles=legend_elements, loc='center')
-    ax_leg.axis('off')  # Hide axes, ticks, spines and background
-
+    axT.tick_params(axis="x", labelbottom=False)
+    axH.tick_params(axis="y", labelleft=False)
+    axT.grid(linestyle = 'dashed')
+    axT.set_axisbelow(True)
+    axH.grid(linestyle = 'dashed')
+    axH.set_axisbelow(True)
     plt.tight_layout()
 
+    
     # end of the point: show, save or close all the open figures
-
+    """
     plt.show()
     exit()
-    
+    """
     path = main_dir+"\\Results\\5\\"+str(N_cluster)+"_step_"+str(n_step)
     # Check if the results dir exists
     if not os.path.exists(path):
         os.mkdir(path)
     
+    fig0.savefig(main_dir+"\\Results\\Data_T_HR_plane.png", dpi = 600)
     fig1.savefig(path+"\\Assignments_start_end.png", dpi = 600)
     fig2.savefig(path+"\\Joint_probability.png", dpi = 600)
     fig2b.savefig(path+"\\Joint_probability_zoom.png", dpi = 600)
@@ -570,7 +613,6 @@ if __name__ == "__main__":
         fig_hist_par_2.savefig(path+"\\Parameters_hist_2.png", dpi = 600)
 
     fig5b.savefig(path+"\\Plane_confidence.png", dpi = 600)
-    fig6.savefig(path+"\\Plane_and_marginal.png", dpi = 600)
 
     header = "par_val d_par_plus d_par_minus for [mu_T, sigma_T, mu_HR, sigma_HR, rho]"
     np.savetxt(path+"\\parameters_values_0.txt", np.array([par_val[0], d_par_plus[0], d_par_minus[0]]).T, header=header)
