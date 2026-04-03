@@ -248,7 +248,7 @@ if __name__ == "__main__":
     ax.set_ylim(0,170)
     ax.grid(linestyle = 'dashed')
     ax.set_axisbelow(True)
-    fig0.legend()
+    plt.legend()
     #fig0.savefig(main_dir+"\\Results\\Data.png", dpi = 600)
     plt.show()
     exit()
