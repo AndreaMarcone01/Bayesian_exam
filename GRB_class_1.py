@@ -336,7 +336,7 @@ if __name__ == "__main__":
         ax.set_ylabel(par_name[i])
         ax.grid(linestyle = 'dashed')
         ax.set_axisbelow(True)
-    ax.set_xlabel("Iteration")
+    ax.set_xlabel("Lag")
     plt.tight_layout()
 
     thinning = 125
@@ -351,7 +351,7 @@ if __name__ == "__main__":
         ax.legend()
         ax.grid(linestyle = 'dashed')
         ax.set_axisbelow(True)
-    ax.set_xlabel("Iteration")
+    ax.set_xlabel("Lag")
     plt.tight_layout()
 
     
