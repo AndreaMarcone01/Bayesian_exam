@@ -5,36 +5,70 @@ if __name__ == "__main__":
     import os
 
     main_dir = os.path.dirname(os.path.realpath(__file__))
+    xx = np.linspace(-4,7,256)
 
+    # check differences between the point 1a and 1b
     par, par_plus, par_minus = np.loadtxt(main_dir+"\\Results\\1a\\parameters_values.txt", unpack=True)
     e_par, e_par_plus, e_par_minus = np.loadtxt(main_dir+"\\Results\\1b\\Err_parameters_values.txt", unpack=True)
     name_l = ["$w$", "$\\mu_1$", "$\\sigma_1$", "$\\mu_2$", "$\\sigma_2$"]
-
     
-    fig = plt.figure("Confront parameters", figsize = (6,6))
+    fig0 = plt.figure("Confront parameters", figsize = (6,6))
     for i in range(len(par)):
         if i > 0:
-            ax = fig.add_subplot(3, 2, i+2)
+            ax = fig0.add_subplot(3, 2, i+2)
         else:
-            ax = fig.add_subplot(3, 2, i+1)
+            ax = fig0.add_subplot(3, 2, i+1)
         
         errors = [[par_minus[i]], [par_plus[i]]]
         ax.errorbar(0, par[i], yerr=[[par_minus[i]], [par_plus[i]]], color = 'c', fmt= 'o')
         ax.errorbar(1, e_par[i], yerr=[[e_par_minus[i]], [e_par_plus[i]]], color = 'm', fmt= 'o')
         ax.set_xticks([0,1], ['No errors', 'With errors'])
         ax.set_ylabel(name_l[i])
-
-    """ax_leg = fig.add_subplot(3,2,2)
-    # Create dummy artists just for the legend
-    from matplotlib.lines import Line2D
-    legend_elements = [
-        Line2D([0], [0], color='C0', linewidth=1.5, label='Marginalised posterior samples'),
-        Line2D([0], [0], color='r', linestyle='dashed', label='Prior'),
-        Line2D([0], [0], color='green', linestyle='dashed', label='Median value'),
-        Line2D([0], [0], color='orange', linestyle='dashed', label='Median value $\\pm\\sigma$'),
-    ]
-    ax_leg.legend(handles=legend_elements, loc='center')
-    ax_leg.axis('off')  # Hide axes, ticks, spines and background"""
     plt.tight_layout()
-    plt.show()
+
+    pdf, norm_1, norm_2 = np.loadtxt(main_dir+"\\Results\\1a\\model_values.txt", unpack=True)
+    e_pdf, e_norm_1, e_norm_2 = np.loadtxt(main_dir+"\\Results\\1b\\Err_model_values.txt", unpack=True)
     
+    fig1 = plt.figure("Data and model")
+    ax = fig1.add_subplot(111)
+    ax.plot(xx, pdf, color = 'k', label = 'Without errors')
+    ax.plot(xx, e_pdf, 'r', label = "With errors")
+    ax.set_xlabel("$\\log(T_{90})$")
+    ax.set_ylabel("Probability")
+    ax.legend()
+    ax.grid(linestyle = 'dashed')
+    ax.set_axisbelow(True)
+    """
+    ax_diff = ax.inset_axes([0, 1.05, 1, 0.25], sharex=ax)
+    ax_diff.tick_params(axis="x", labelbottom=False)
+    ax_diff.plot(xx, pdf-e_pdf, color = 'C0', label = 'Difference')
+    ax_diff.set_ylabel("Difference")
+    ax_diff.grid(linestyle = 'dashed')
+    ax_diff.set_axisbelow(True)
+    plt.legend()
+    plt.tight_layout()
+    """
+
+    fig2 = plt.figure("Norm 1")
+    ax = fig2.add_subplot(111)
+    ax.plot(xx, norm_1, color = 'k', label = 'Without errors')
+    ax.plot(xx, e_norm_1, 'r', label = "With errors")
+    ax.set_xlabel("$\\log(T_{90})$")
+    ax.set_ylabel("Probability")
+    ax.legend()
+    ax.grid(linestyle = 'dashed')
+    ax.set_axisbelow(True)
+
+    fig3 = plt.figure("Norm 2")
+    ax = fig3.add_subplot(111)
+    ax.plot(xx, norm_2, color = 'k', label = 'Without errors')
+    ax.plot(xx, e_norm_2, 'r', label = "With errors")
+    ax.set_xlabel("$\\log(T_{90})$")
+    ax.set_ylabel("Probability")
+    ax.legend()
+    ax.grid(linestyle = 'dashed')
+    ax.set_axisbelow(True)
+
+
+
+    plt.show()    

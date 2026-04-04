@@ -230,7 +230,7 @@ if __name__ == "__main__":
     # build data with uncertainties
     data = np.zeros(len(xx))
     for i in range(len(log_T)):
-        data = data + gauss(xx, log_T[i], d_log_T[i]) * dx
+        data = data + gauss(xx, log_T[i], d_log_T[i])
 
     data_n = data/(np.sum(data) * dx)               # normalize to have area 1 (for plots)
     scale = np.sum(counts)*np.diff(bins)[0]         # scale from normalized data to binned ones
@@ -326,10 +326,9 @@ if __name__ == "__main__":
     for i in range(samples.shape[1]):
         ax = fig3.add_subplot(5, 1, i+1)
         ax.plot(autocorrelation(samples[:,i]), '.', color = 'C0', label = 'Autocorrelation')
-        ax.set_ylabel(par_name[i])
         ax.grid(linestyle = 'dashed')
         ax.set_axisbelow(True)
-    ax.set_xlabel("Iteration")
+    ax.set_xlabel("Lag")
     plt.tight_layout()
 
     thinning = 200
@@ -339,12 +338,11 @@ if __name__ == "__main__":
         autoc = autocorrelation(samples[:,i])
         ax.plot(autoc, '.', color = 'C0', label = f'Value at thinning: {autoc[thinning]:.2f}')
         ax.axvline(thinning, color = 'r', linestyle = 'dashed')
-        ax.set_ylabel(par_name[i])
         ax.set_xlim(-10, 2 * thinning)
         ax.legend()
         ax.grid(linestyle = 'dashed')
         ax.set_axisbelow(True)
-    ax.set_xlabel("Iteration")
+    ax.set_xlabel("Lag")
     plt.tight_layout()
     
     # after burn-in and autocorrelation we plot the histograms of the parameters
@@ -396,7 +394,7 @@ if __name__ == "__main__":
         Line2D([0], [0], color='C0', linewidth=1.5, label='Marginalized posterior samples'),
         #Line2D([0], [0], color='r', linestyle='dashed', label='Prior'),
         Line2D([0], [0], color='green', linestyle='dashed', label='Median value'),
-        Line2D([0], [0], color='orange', linestyle='dashed', label='90% confidence interval$')]
+        Line2D([0], [0], color='orange', linestyle='dashed', label='90% confidence interval')]
     ax_leg.legend(handles=legend_elements, loc='center')
     ax_leg.axis('off')  # Hide axes, ticks, spines and background
     plt.tight_layout()
@@ -424,8 +422,8 @@ if __name__ == "__main__":
 
     # end of point: save, show or close all the open figures
     
-    plt.show()
-    exit()
+    #plt.show()
+    #exit()
 
     fig0.savefig(main_dir+"\\Results\\1b\\Err_Dataset.png", dpi = 600)
     fig1.savefig(main_dir+"\\Results\\1b\\Err_Parameters_chain.png", dpi = 600)
