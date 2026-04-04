@@ -333,7 +333,6 @@ if __name__ == "__main__":
     for i in range(samples.shape[1]):
         ax = fig3.add_subplot(5, 1, i+1)
         ax.plot(autocorrelation(samples[:,i]), '.', color = 'C0', label = 'Autocorrelation')
-        ax.set_ylabel(par_name[i])
         ax.grid(linestyle = 'dashed')
         ax.set_axisbelow(True)
     ax.set_xlabel("Lag")
@@ -346,7 +345,6 @@ if __name__ == "__main__":
         autoc = autocorrelation(samples[:,i])
         ax.plot(autoc, '.', color = 'C0', label = f'Value at thinning: {autoc[thinning]:.2f}')
         ax.axvline(thinning, color = 'r', linestyle = 'dashed')
-        ax.set_ylabel(par_name[i])
         ax.set_xlim(-10, 2 * thinning)
         ax.legend()
         ax.grid(linestyle = 'dashed')
