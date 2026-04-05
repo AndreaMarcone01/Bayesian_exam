@@ -31,11 +31,12 @@ if __name__ == "__main__":
     
     fig1 = plt.figure("Data and model")
     ax = fig1.add_subplot(111)
-    ax.plot(xx, pdf, color = 'k', label = 'Without errors')
-    ax.plot(xx, e_pdf, 'r', label = "With errors")
+    ax.plot(xx, pdf, color = 'r', label = 'Without errors', linestyle='--', zorder=2)
+    ax.plot(xx, e_pdf, 'r', label = "With errors", alpha = 0.5, zorder=3)
     ax.set_xlabel("$\\log(T_{90})$")
     ax.set_ylabel("Probability")
-    ax.legend()
+    ax.set_ylim(0,0.30)
+    ax.legend(loc='upper left')
     ax.grid(linestyle = 'dashed')
     ax.set_axisbelow(True)
     """
@@ -51,24 +52,39 @@ if __name__ == "__main__":
 
     fig2 = plt.figure("Norm 1")
     ax = fig2.add_subplot(111)
-    ax.plot(xx, norm_1, color = 'k', label = 'Without errors')
-    ax.plot(xx, e_norm_1, 'r', label = "With errors")
+    ax.plot(xx, norm_1, color = 'g', label = 'Without errors', linestyle='--', zorder=2)
+    ax.plot(xx, e_norm_1, 'g', label = "With errors", alpha = 0.5, zorder=3)
     ax.set_xlabel("$\\log(T_{90})$")
+    ax.set_xlim(-4,4)
     ax.set_ylabel("Probability")
-    ax.legend()
+    ax.set_ylim(0,0.125)
+    ax.legend(loc='upper left')
     ax.grid(linestyle = 'dashed')
     ax.set_axisbelow(True)
 
     fig3 = plt.figure("Norm 2")
     ax = fig3.add_subplot(111)
-    ax.plot(xx, norm_2, color = 'k', label = 'Without errors')
-    ax.plot(xx, e_norm_2, 'r', label = "With errors")
+    ax.plot(xx, norm_2, color = 'darkorange', label = 'Without errors', linestyle='--', zorder=2)
+    ax.plot(xx, e_norm_2, 'darkorange', label = "With errors", alpha = 0.5, zorder=3)
     ax.set_xlabel("$\\log(T_{90})$")
+    ax.set_xlim(0,7)
     ax.set_ylabel("Probability")
-    ax.legend()
+    ax.set_ylim(0,0.30)
+    ax.legend(loc='upper left')
     ax.grid(linestyle = 'dashed')
     ax.set_axisbelow(True)
 
+    # end of script: save the images or show and exit
+    
+    plt.show()
+    exit()
+    
 
+    path = main_dir+"\\Results\\1c"
+    # Check if the results dir exists
+    if not os.path.exists(path):
+        os.mkdir(path)
 
-    plt.show()    
+    fig1.savefig(path+"\\Total_model_conf.png", dpi = 600)
+    fig2.savefig(path+"\\Norm_1_conf.png", dpi = 600)
+    fig3.savefig(path+"\\Norm_2_conf.png", dpi = 600)
