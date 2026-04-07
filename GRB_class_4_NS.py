@@ -118,7 +118,6 @@ class FunctionalModel(raynest.model.Model):
 
 
 if __name__ == "__main__":
-    import matplotlib.pyplot as plt
     import os
 
     rng = np.random.default_rng(111) # initialize seed for reproducibility

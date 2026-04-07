@@ -128,6 +128,8 @@ if __name__ == "__main__":
     samples3 = h5_file['combined'].get('posterior_samples')
     log_evidence3 = h5_file['combined'].get('logZ')[()]
 
+    print(f"The log evidence for 2 classes is: {log_evidence2:.2f}")
+    print(f"The log evidence for 3 classes is: {log_evidence3:.2f}")
     print(f"The Odd ratio is O_23 = {np.exp(log_evidence2-log_evidence3):.2e}")
     
     # first of all: trace of the samples, burnin and thinning
