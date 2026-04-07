@@ -431,8 +431,8 @@ if __name__ == "__main__":
     
     # end of first point: show, save or close all the open figures
 
-    #plt.show()
-    #exit()
+    plt.show()
+    exit()
 
     fig1.savefig(main_dir+"\\Results\\1a\\Parameters_chain.png", dpi = 600)
     fig2.savefig(main_dir+"\\Results\\1a\\Parameters_chain_zoom.png", dpi = 600)

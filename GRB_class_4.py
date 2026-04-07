@@ -284,6 +284,7 @@ if __name__ == "__main__":
             ax = fig3.add_subplot(4, 2, i+2)
         counts_i, bins_i = np.histogram(parameters[:,i], bins = 30, density=True)
         ax.stairs(counts_i, bins_i, color = 'C0', label = 'Posterior samples', linewidth = 1.5)
+        """
         # plot the priors, Jeffrey for sigmas and uniform for others
         if i == 2 or i == 4 or i == 6:
             a = bounds3[i][0]
@@ -292,6 +293,7 @@ if __name__ == "__main__":
             ax.plot(ss, 1/(np.log(b/a) * ss), color = 'r', label = "Prior", linestyle='dashed')
         else:
             ax.axhline(1/(bounds3[i][1] - bounds3[i][0]), color = 'r', label = "Prior", linestyle='dashed')
+        """
         ax.axvline(par_val[i], color = 'g', label = "Median value", linestyle='dashed')
         ax.axvline(par_val[i]+d_par_plus[i], color = 'orange', linestyle='dashed')
         ax.axvline(par_val[i]-d_par_minus[i], color = 'orange', label = "90% confidence interval", linestyle='dashed')
@@ -339,7 +341,7 @@ if __name__ == "__main__":
     ax.set_ylim([0,170])
     ax.grid(linestyle = 'dashed')
     ax.set_axisbelow(True)
-    plt.legend(loc='upper right')
+    plt.legend(loc='upper left')
 
 
     # save the results

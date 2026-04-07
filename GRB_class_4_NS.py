@@ -147,11 +147,12 @@ if __name__ == "__main__":
     two_class_model = FunctionalModel(counts, center, weighted_log_normal, bounds2, name2)
     three_class_model = FunctionalModel(counts, center, three_weighted_log_normal, bounds3, name3)
 
-    run2  = True
-    run3  = True
+    run2  = False
+    run3  = False
     nlive = 2000
 
     if run2 == True:
+        print("Run with 2 classes")
         work = raynest.raynest(two_class_model, verbose=2,                  # model on which infer, output on screen and memory (how much the function speaks)
                                nnest=1,                                     # parallelize: number of parallel algorithm
                                nensemble=6, nslice=0, nhamiltonian=0,       # method of replacing the live points
@@ -161,6 +162,7 @@ if __name__ == "__main__":
         work.run()
 
     if run3 == True:
+        print("Run with 3 classes")
         work = raynest.raynest(three_class_model, verbose=2,
                                nnest=1,
                                nensemble=6, nslice=0, nhamiltonian=0,

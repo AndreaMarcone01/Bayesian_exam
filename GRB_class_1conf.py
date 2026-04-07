@@ -76,9 +76,8 @@ if __name__ == "__main__":
 
     # end of script: save the images or show and exit
     
-    #plt.show()
-    #exit()
-    
+    plt.show()
+    exit()
 
     path = main_dir+"\\Results\\1c"
     # Check if the results dir exists
