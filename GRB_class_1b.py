@@ -320,6 +320,7 @@ if __name__ == "__main__":
     ax.set_axisbelow(True)
     plt.legend()
 
+    samples = samples[burnin:,:]
 
     # look at autocorrelation for theta
     fig3 = plt.figure("Parameters autocorrelation", figsize = (6,6))
@@ -331,7 +332,7 @@ if __name__ == "__main__":
     ax.set_xlabel("Lag")
     plt.tight_layout()
 
-    thinning = 200
+    thinning = 150
     fig4 = plt.figure("Parameters autocorrelation: zoom to thinning", figsize = (6,6))
     for i in range(samples.shape[1]):
         ax = fig4.add_subplot(5, 1, i+1)
@@ -346,8 +347,7 @@ if __name__ == "__main__":
     plt.tight_layout()
     
     # after burn-in and autocorrelation we plot the histograms of the parameters
-    parameters = samples[burnin:,:]
-    parameters = parameters[::thinning,:]
+    parameters = samples[::thinning,:]
 
     print(f"After burn-in and thinning we have {len(parameters[:,0])} samples")
     
@@ -422,8 +422,8 @@ if __name__ == "__main__":
 
     # end of point: save, show or close all the open figures
     
-    plt.show()
-    exit()
+    #plt.show()
+    #exit()
 
     fig0.savefig(main_dir+"\\Results\\1b\\Err_Dataset.png", dpi = 600)
     fig1.savefig(main_dir+"\\Results\\1b\\Err_Parameters_chain.png", dpi = 600)
