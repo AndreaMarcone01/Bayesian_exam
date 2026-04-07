@@ -108,22 +108,32 @@ if __name__ == "__main__":
 
     fig_prob = plt.figure("Probabilities for the two class of GRB")
     ax = fig_prob.add_subplot(111)
-    ax.plot(xx, prob_short, 'g', label = "P short")
-    ax.plot(xx, prob_long, color = 'darkorange', label = "P long")
-    ax.axvline(log_T_trans, color = 'r', label = "Threshold", linestyle = 'dashed')
-    ax.axvline(begin, color = 'b', linestyle = 'dashdot', alpha = 0.5)
-    ax.axvline(end, color = 'b', label = "Transition", linestyle = 'dashdot', alpha = 0.5)    
+    ax.plot(xx, prob_short, 'g', label = "$P(S|TI)$")
+    ax.plot(xx, prob_long, color = 'darkorange', label = "$P(L|TI)$")   
     ax.set_xlabel("$\\log(T_{90})$")
     ax.set_xlim([-4,7])
     ax.set_ylabel("Probability")
     ax.grid(linestyle = 'dashed')
     ax.set_axisbelow(True)
-    plt.legend()
+    leg_loc = (0.7,0.6)
+    ax.legend(loc='upper left', bbox_to_anchor = leg_loc)
     
     # end of point, show and or save images
 
-    plt.show()
-    exit()
+    #plt.show()
+    #exit()
 
-    fig_class.savefig(main_dir+"\\Results\\GRB_to_class.png", dpi = 600)
-    fig_prob.savefig(main_dir+"\\Results\\Prob_of_class.png", dpi = 600)
+    path = main_dir+"\\Results\\2_3\\"
+    # Check if the results dir exists
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+    fig_class.savefig(path+"GRB_to_class.png", dpi = 600)
+    fig_prob.savefig(path+"0_Prob_of_class.png", dpi = 600)
+    ax.axvline(log_T_trans, color = 'r', label = "Threshold", linestyle = 'dashed')
+    ax.legend(loc='upper left', bbox_to_anchor = leg_loc)
+    fig_prob.savefig(path+"1_Prob_of_class.png", dpi = 600)
+    ax.axvline(begin, color = 'b', linestyle = 'dashdot', alpha = 0.5)
+    ax.axvline(end, color = 'b', label = "Transition", linestyle = 'dashdot', alpha = 0.5) 
+    ax.legend(loc='upper left', bbox_to_anchor = leg_loc)
+    fig_prob.savefig(path+"2_Prob_of_class.png", dpi = 600)
