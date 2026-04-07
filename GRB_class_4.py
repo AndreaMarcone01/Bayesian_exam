@@ -139,27 +139,29 @@ if __name__ == "__main__":
     samples2 = sample
 
     # trace plots
+    burnin = 100
     fig = plt.figure("Parameters chain 2", figsize = (6,6))
     for i in range(samples2.shape[1]):
         ax = fig.add_subplot(5, 1, i+1)
         ax.plot(samples2[:,i], '.', color = 'C0')
+        ax.axvline(burnin, color='r', linestyle='dashed')
         ax.set_ylabel(name2_l[i])
     ax.set_xlabel("Iteration")
     plt.tight_layout()
     
-    burnin = 100
-    samples2 = samples2[burnin:,:]
+    
+    samples = samples2[burnin:,:]
+    thinning = 15
 
     # look at autocorrelation for theta
     fig = plt.figure("Parameters autocorrelation 2", figsize = (6,6))
-    for i in range(samples2.shape[1]):
+    for i in range(samples.shape[1]):
         ax = fig.add_subplot(5, 1, i+1)
-        ax.plot(autocorrelation(samples2[:,i]), '.', color = 'C0', label = 'Autocorrelation')
-        ax.set_ylabel(name2_l[i])
+        ax.plot(autocorrelation(samples[:,i]), '.', color = 'C0', label = 'Autocorrelation')
+        ax.axvline(thinning, color='r', linestyle='dashed')
     ax.set_xlabel("Iteration")
     plt.tight_layout()
     
-    thinning = 15
     parameters = samples2[::thinning,:]
 
     print(f"2 class: after burn-in and thinning we have {len(parameters[:,0])} samples")
@@ -181,7 +183,7 @@ if __name__ == "__main__":
         else:
             ax = fig1.add_subplot(3, 2, i+1)
         counts_i, bins_i = np.histogram(parameters[:,i], bins = 30, density=True)
-        ax.stairs(counts_i, bins_i, color = 'C0', linewidth = 1.5, baseline=0)
+        ax.stairs(counts_i, bins_i, color = 'C0', linewidth = 1.5, baseline=0)        
         ax.axvline(par_val[i], color = 'green', linestyle='dashed')
         ax.axvline(par_val[i]+d_par_plus[i], color = 'orange', linestyle='dashed')
         ax.axvline(par_val[i]-d_par_minus[i], color = 'orange', linestyle='dashed')
@@ -195,10 +197,8 @@ if __name__ == "__main__":
     from matplotlib.lines import Line2D
     legend_elements = [
         Line2D([0], [0], color='C0', linewidth=1.5, label='Marginalised posterior samples'),
-        #Line2D([0], [0], color='r', linestyle='dashed', label='Prior'),
         Line2D([0], [0], color='green', linestyle='dashed', label='Median value'),
-        Line2D([0], [0], color='orange', linestyle='dashed', label='90% confidence interval'),
-    ]
+        Line2D([0], [0], color='orange', linestyle='dashed', label='90% confidence interval')]
     ax_leg.legend(handles=legend_elements, loc='center')
     ax_leg.axis('off')  # Hide axes, ticks, spines and background
     plt.tight_layout()
@@ -227,7 +227,7 @@ if __name__ == "__main__":
 
     #store the parameters result with a different name to eventually save at end of file
     save2 = np.array([par_val, d_par_plus, d_par_minus]).T
-
+    plt.close('all')
 
     # now all again for model with 3 class
     samples3 = samples3[()]
@@ -237,28 +237,30 @@ if __name__ == "__main__":
     samples3 = sample
 
     # trace plots
+    burnin = 2000
     fig = plt.figure("Parameters chain 3", figsize = (6,6))
     for i in range(samples3.shape[1]):
         ax = fig.add_subplot(8, 1, i+1)
         ax.plot(samples3[:,i], '.', color = 'C0')
+        ax.axvline(burnin, color='r', linestyle='dashed')
         ax.set_ylabel(name3_l[i])
     ax.set_xlabel("Iteration")
     plt.tight_layout()
         
-    burnin = 1000
+    samples = samples3[burnin:,:]
+    thinning = 6
 
     # look at autocorrelation for theta
     fig = plt.figure("Parameters autocorrelation 3", figsize = (6,6))
-    for i in range(samples3.shape[1]):
+    for i in range(samples.shape[1]):
         ax = fig.add_subplot(8, 1, i+1)
-        ax.plot(autocorrelation(samples3[:,i]), '.', color = 'C0', label = 'Autocorrelation')
-        ax.set_ylabel(name3_l[i])
+        ax.plot(autocorrelation(samples[:,i]), '.-', color = 'C0', label = 'Autocorrelation')
+        ax.axvline(thinning, color='r', linestyle='dashed')
+        ax.set_xlim(-1, 20)
     ax.set_xlabel("Iteration")
     plt.tight_layout()
-    
-    thinning = 15
-    sample = samples3[burnin:,:]
-    parameters = sample[::thinning,:]
+
+    parameters = samples[::thinning,:]
     print(f"3 class: after burn-in and thinning we have {len(parameters[:,0])} samples")
 
 
@@ -334,15 +336,16 @@ if __name__ == "__main__":
     ax.plot(xx, pdf3*scale, 'r', label = "Model with 3 classes", zorder = 2)
     ax.set_xlabel("$\\log(T_{90})$")
     ax.set_ylabel("Counts")
+    ax.set_ylim([0,170])
     ax.grid(linestyle = 'dashed')
     ax.set_axisbelow(True)
-    plt.legend()
+    plt.legend(loc='upper right')
 
 
     # save the results
     
-    #plt.show()
-    #exit()
+    plt.show()
+    exit()
 
     header = "par_val d_par_plus d_par_minus"
     # from the 2 class analysis
