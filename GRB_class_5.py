@@ -32,7 +32,7 @@ class state():
         for k in range(N_cluster):
             bar_x_k[k] = np.mean(data[vec_z == k], axis = 0)
 
-        # check that the dimentions are right
+        # check that the dimensions are right
         if bar_x_k.shape != mu_0.shape:
             print("Something is wrong, check the initial mu_0!")
             print("Exiting...")
@@ -67,7 +67,7 @@ class state():
                 "bar_x_k": bar_x_k,                                                 # mean of data for cluster
                 "S_k": S_k                                                          # the scatter matrix
             },
-            "log_joint_p": np.nan                                       # log of joint probabilty 
+            "log_joint_p": np.nan                                       # log of joint probability 
         }
 
     def posterior_parameters(self):
@@ -178,6 +178,44 @@ def autocorrelation(x, norm = True):
         
     return corr
 
+def draw_band(ax, center, width_out, height_out, width_in, height_in, angle, color, alpha=0.4, zorder=2):
+    """Function to draw band in the plane.
+    
+    Args:
+        ax: matplotlib axis in which draw
+        center (tuple): center of the patch
+        width_out (float): width of exterior border
+        height_out (float): height of exterior border
+        width_in (float): width of interior border
+        height_in (float): height of interior border
+        angle (float): angle of drawing (in radians)
+        color (string): color in which draw
+        alpha (float): transparency of color, default to 0.4
+        zorder (int): order on z axis, default to 2
+
+    Returns:
+        Add the drawing to the axis
+    """
+
+    angle_rad = np.radians(angle)
+    cos_a, sin_a = np.cos(angle_rad), np.sin(angle_rad)
+    
+    xx, yy = np.meshgrid(np.linspace(center[0]-width_out, center[0]+width_out, 1600),
+                         np.linspace(center[1]-height_out, center[1]+height_out, 1600))
+    
+    dx, dy = xx - center[0], yy - center[1]
+    x_rot =  cos_a * dx + sin_a * dy
+    y_rot = -sin_a * dx + cos_a * dy
+    
+    inside_out = (x_rot/(width_out/2))**2  + (y_rot/(height_out/2))**2 <= 1
+    inside_in  = (x_rot/(width_in/2))**2  + (y_rot/(height_in/2))**2  <= 1
+    
+    band = (inside_out & ~inside_in).astype(float)
+    band[band == 0] = np.nan  # transparent outside
+   
+    cf = ax.contourf(xx, yy, band, levels=[0.5, 1.5], colors=[color], alpha=alpha, zorder=zorder)
+    cf.set_clip_path(ax.patch)
+
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
@@ -259,7 +297,7 @@ if __name__ == "__main__":
     ax = fig1.add_subplot(211)
     for k in sampler.state["cluster_id_"]:
         data_k = sampler.state["data_"][sampler.state["vec_z"] == k]
-        ax.scatter(data_k[:,0], data_k[:,1], marker = '.', color = cluster_color[k], label = "Cluster number "+str(k))
+        ax.scatter(data_k[:,0], data_k[:,1], marker = '.', color = cluster_color[k], label = "Class number "+str(k))
     ax.set_title("Initial assignment")
     ax.set_ylabel("$\\log(HR)$")
     ax.grid(linestyle = 'dashed')
@@ -349,7 +387,7 @@ if __name__ == "__main__":
     ax1 = fig1.add_subplot(212, sharex=ax)
     for k in sampler.state["cluster_id_"]:
         data_k = sampler.state["data_"][vec_z == k]
-        ax1.scatter(data_k[:,0], data_k[:,1], marker = '.', color = cluster_color[k], label = "Cluster number "+str(k))
+        ax1.scatter(data_k[:,0], data_k[:,1], marker = '.', color = cluster_color[k], label = "Class number "+str(k))
     ax1.set_title("After "+str(n_step)+" step")
     ax1.set_xlabel("$\\log(T_{90})$")
     ax1.set_ylabel("$\\log(HR)$")
@@ -370,7 +408,6 @@ if __name__ == "__main__":
     ax.set_axisbelow(True)
     plt.legend()
 
-    plt.close('all')
 
     fig2b = plt.figure("Joint probability trace zoom")
     ax = fig2b.add_subplot(111)
@@ -383,9 +420,6 @@ if __name__ == "__main__":
     ax.grid(linestyle = 'dashed')
     ax.set_axisbelow(True)
     plt.legend()
-
-    plt.show()
-    exit()
 
     """
     # I like this but maybe not really useful 
@@ -407,34 +441,49 @@ if __name__ == "__main__":
     plt.legend(handles=legend_elements)
     """
 
+
     par_name = ["$\\mu_T$", "$\\sigma_T$", "$\\mu_{HR}$", "$\\sigma_{HR}$", "$\\rho$"]
-    thinning = 20
+    thinning = 25
     # autocorrelation for each set of parameters
     fig3 = plt.figure("Parameters autocorrelation ("+str(N_cluster)+" clusters)", figsize = (6,6))
     for k in range(N_cluster):
         parameters = [mu_T[k], sigma_T[k], mu_HR[k], sigma_HR[k], rho[k]]
         for i in range(len(parameters)):
             ax = fig3.add_subplot(5, N_cluster, k+N_cluster*i+1)
-            if k+N_cluster*i == np.arange(N_cluster)[k]:
-                ax.set_title("Cluster "+str(k))
+            # set title if we are at the start
+            if k+i == np.arange(N_cluster)[k]:
+                ax.set_title("Class "+str(k))
+            # set x label if we are at the end
+            if i+1 == len(parameters):
+                ax.set_xlabel("Lag")
             ax.plot(autocorrelation(parameters[i]), '.', color = 'C0', label = 'Autocorrelation')
-            ax.set_ylabel(par_name[i])
-    ax.set_xlabel("Iteration")
+            ax.grid(linestyle = 'dashed')
+            ax.set_axisbelow(True)
     plt.tight_layout()
+
 
     fig3b = plt.figure("Parameters autocorrelation ("+str(N_cluster)+" clusters) zoom", figsize = (6,6))
     for k in range(N_cluster):
         parameters = [mu_T[k], sigma_T[k], mu_HR[k], sigma_HR[k], rho[k]]
         for i in range(len(parameters)):
             ax = fig3b.add_subplot(5, N_cluster, k+N_cluster*i+1)
-            if k+N_cluster*i == np.arange(N_cluster)[k]:
-                ax.set_title("Cluster "+str(k))
-            ax.plot(autocorrelation(parameters[i]), '.', color = 'C0', label = 'Autocorrelation')
-            ax.axvline(thinning, color='r', linestyle = 'dashed', label = 'Thinning')
+            # set title if we are at the start
+            if k+i == np.arange(N_cluster)[k]:
+                ax.set_title("Class "+str(k))
+            # set x label if we are at the end
+            if i+1 == len(parameters):
+                ax.set_xlabel("Lag")
+            # compute autocorr
+            autoc = autocorrelation(parameters[i])
+            ax.plot(autoc, '.', color = 'C0', label = par_name[i]+f': {autoc[thinning]:.2f}')
+            ax.axvline(thinning, color='r', linestyle = 'dashed')
             ax.set_ylabel(par_name[i])
             ax.set_xlim(-10, 2*thinning)
-    ax.set_xlabel("Iteration")
+            ax.grid(linestyle = 'dashed')
+            ax.set_axisbelow(True)
+            ax.legend(fontsize='small')
     plt.tight_layout()
+   
 
     # thinning the samples    
     par_mu_T = mu_T[:,::thinning]
@@ -491,40 +540,19 @@ if __name__ == "__main__":
 
     # confidence levels in the plane
     from matplotlib.patches import Ellipse
-    scale = 2       # how many sigmas we want to represent? scale = 2 has ~68% of data     
-
-    # function to draw confidence leves around ellipses
-    def draw_band(ax, center, width_out, height_out, width_in, height_in, angle, color, alpha=0.4, zorder=2):
-        angle_rad = np.radians(angle)
-        cos_a, sin_a = np.cos(angle_rad), np.sin(angle_rad)
-    
-        xx, yy = np.meshgrid(np.linspace(center[0]-width_out, center[0]+width_out, 1600),
-                         np.linspace(center[1]-height_out, center[1]+height_out, 1600))
-    
-        dx, dy = xx - center[0], yy - center[1]
-        x_rot =  cos_a * dx + sin_a * dy
-        y_rot = -sin_a * dx + cos_a * dy
-    
-        inside_out = (x_rot/(width_out/2))**2  + (y_rot/(height_out/2))**2 <= 1
-        inside_in  = (x_rot/(width_in/2))**2  + (y_rot/(height_in/2))**2  <= 1
-    
-        band = (inside_out & ~inside_in).astype(float)
-        band[band == 0] = np.nan  # transparent outside
-    
-        cf = ax.contourf(xx, yy, band, levels=[0.5, 1.5], colors=[color], alpha=alpha, zorder=zorder)
-        cf.set_clip_path(ax.patch)
+    scale = 2       # how many sigmas we want to represent? scale = 2 has ~68% of data
        
     bottom_T = np.zeros(center_T.shape)
     bottom_HR = np.zeros(center_HR.shape)
 
     # the plot
-    fig5b = plt.figure("Clusters in plane log_T log_HR")
+    fig5b = plt.figure("Classes in plane log_T log_HR")
     ax = fig5b.add_subplot(111)
     axT = ax.inset_axes([0, 1.05, 1, 0.25], sharex=ax)
     axH = ax.inset_axes([1.05, 0, 0.25, 1], sharey=ax)
     for k in range(N_cluster):
         data_k = sampler.state["data_"][vec_z == k]
-        ax.scatter(data_k[:,0], data_k[:,1], marker = '.', color = cluster_color[k], zorder = 1, alpha=0.25, label="Cluster "+str(k))
+        ax.scatter(data_k[:,0], data_k[:,1], marker = '.', color = cluster_color[k], zorder = 1, alpha=0.25, label="Class "+str(k))
         count_T, _ = np.histogram(data_k[:,0], bins_T)
         axT.bar(center_T, count_T, width_T, color = cluster_color[k], bottom=bottom_T, alpha=0.5)
         bottom_T += count_T
@@ -597,10 +625,10 @@ if __name__ == "__main__":
 
     
     # end of the point: show, save or close all the open figures
-    """
-    plt.show()
-    exit()
-    """
+    
+    #plt.show()
+    #exit()
+    
     path = main_dir+"\\Results\\5\\"+str(N_cluster)+"_step_"+str(n_step)
     # Check if the results dir exists
     if not os.path.exists(path):
