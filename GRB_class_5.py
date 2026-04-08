@@ -523,6 +523,7 @@ if __name__ == "__main__":
 
         ax_leg = fig4.add_subplot(3,2,6)
         legend_elements = [
+            Line2D([0], [0], color='white', linewidth=0, label="Class "+str(k)),
             Line2D([0], [0], color='C0', linewidth=1.5, label='Marginalized posterior samples'),
             Line2D([0], [0], color='green', linestyle='dashed', label='Median value'),
             Line2D([0], [0], color='orange', linestyle='dashed', label='90% confidence interval'),]
