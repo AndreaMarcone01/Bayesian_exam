@@ -370,9 +370,11 @@ if __name__ == "__main__":
     ax.set_axisbelow(True)
     plt.legend()
 
+    plt.close('all')
+
     fig2b = plt.figure("Joint probability trace zoom")
     ax = fig2b.add_subplot(111)
-    ax.plot(log_p, '-o', color='C0', label = "Joint probability")
+    ax.plot(log_p, marker='.', color='C0', label = "Joint probability")
     ax.axvline(burn_in, color ='r', linestyle='dashed', label='Burn-in')
     ax.set_xlabel("Steps")
     ax.set_xlim(-5, 2*burn_in)
@@ -381,6 +383,9 @@ if __name__ == "__main__":
     ax.grid(linestyle = 'dashed')
     ax.set_axisbelow(True)
     plt.legend()
+
+    plt.show()
+    exit()
 
     """
     # I like this but maybe not really useful 

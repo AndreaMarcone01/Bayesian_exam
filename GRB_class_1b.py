@@ -311,7 +311,7 @@ if __name__ == "__main__":
 
     fig_post = plt.figure("Chain posterior zoom")
     ax = fig_post.add_subplot(111)
-    ax.plot(logP, label = 'log Posterior')
+    ax.plot(logP, marker='.', color = 'C0', label = 'log Posterior')
     ax.axvline(burnin, color = 'r', label = 'Burn-in', linestyle = 'dashed')
     ax.set_ylabel("log Posterior")
     ax.set_xlabel("Iteration")
