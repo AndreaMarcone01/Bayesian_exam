@@ -277,7 +277,7 @@ if __name__ == "__main__":
     # initialize sampler
     
     # 3 clusters
-    """    
+    """
     N_cluster = 3
     mu_0 = np.array([[-1,0],[1,0],[3.5,0]])
     cluster_color = ['g', 'purple', 'orange']
@@ -289,7 +289,6 @@ if __name__ == "__main__":
     cluster_color = ['g', 'orange']
     conf_color = ['blue', 'red']
     
-
     sampler = state(N_cluster, data, mu_0=mu_0, alpha=1,rng=rng)
     _, _, mu_start, _ = sampler.posterior_parameters()
 
@@ -477,7 +476,6 @@ if __name__ == "__main__":
             autoc = autocorrelation(parameters[i])
             ax.plot(autoc, '.', color = 'C0', label = par_name[i]+f': {autoc[thinning]:.2f}')
             ax.axvline(thinning, color='r', linestyle = 'dashed')
-            ax.set_ylabel(par_name[i])
             ax.set_xlim(-10, 2*thinning)
             ax.grid(linestyle = 'dashed')
             ax.set_axisbelow(True)
@@ -627,8 +625,8 @@ if __name__ == "__main__":
     
     # end of the point: show, save or close all the open figures
     
-    #plt.show()
-    #exit()
+    plt.show()
+    exit()
     
     path = main_dir+"\\Results\\5\\"+str(N_cluster)+"_step_"+str(n_step)
     # Check if the results dir exists
