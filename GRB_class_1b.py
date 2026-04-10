@@ -124,7 +124,7 @@ def proposed_distribution(x, bounds, rng, blind = True):
 
     d = x.shape[0]
     if blind == False:
-        fname = main_dir+"\\unc_samples_covariance.txt"
+        fname = main_dir+"\\Data\\unc_samples_covariance.txt"
         if os.path.isfile(fname) == True: 
             covariance = np.loadtxt(fname)
         else:
@@ -258,7 +258,7 @@ if __name__ == "__main__":
         
         # use this first estimate to adjust the proposal
         covariance = np.cov(samples.T)
-        np.savetxt(main_dir+"\\unc_samples_covariance.txt", covariance)
+        np.savetxt(main_dir+"\\Data\\unc_samples_covariance.txt", covariance)
 
         if prep_run == True:
             # re-run chain with new covariance in proposal
@@ -267,12 +267,12 @@ if __name__ == "__main__":
         
         # save the chain
         header = "w , mu_1, sigma_1, mu_2, sigma_2"
-        np.savetxt(main_dir+"\\unc_samples_chain.txt", samples, header=header)
-        np.savetxt(main_dir+"\\unc_samples_posterior.txt", logP, header="log posterior")
+        np.savetxt(main_dir+"\\Data\\unc_samples_chain.txt", samples, header=header)
+        np.savetxt(main_dir+"\\Data\\unc_samples_posterior.txt", logP, header="log posterior")
 
     else: 
-        samples = np.loadtxt(main_dir+"\\unc_samples_chain.txt")
-        logP = np.loadtxt(main_dir+"\\unc_samples_posterior.txt")
+        samples = np.loadtxt(main_dir+"\\Data\\unc_samples_chain.txt")
+        logP = np.loadtxt(main_dir+"\\Data\\unc_samples_posterior.txt")
         
 
     # Look at the results
