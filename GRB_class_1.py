@@ -329,15 +329,13 @@ if __name__ == "__main__":
     
     # make the burn-in
     samples = samples[burnin:,:]
-
-    plt.close('all')
     
     # look at autocorrelation for theta
     fig3 = plt.figure("Parameters autocorrelation", figsize = (6,6))
     for i in range(samples.shape[1]):
         ax = fig3.add_subplot(5, 1, i+1)
         ax.plot(autocorrelation(samples[:,i]), '.', color = 'C0', label = 'Autocorr('+par_name[i]+')')
-        ax.text(-0.05, 0.5, par_name[i], horizontalalignment='center', verticalalignment='center', transform=ax.transAxes)
+        ax.text(-0.09, 0.5, par_name[i], horizontalalignment='center', verticalalignment='center', transform=ax.transAxes)
         ax.grid(linestyle = 'dashed')
         ax.set_axisbelow(True)
     ax.set_xlabel("Lag")
@@ -348,9 +346,9 @@ if __name__ == "__main__":
     for i in range(samples.shape[1]):
         ax = fig4.add_subplot(5, 1, i+1)
         autoc = autocorrelation(samples[:,i])
-        ax.plot(autoc, '.', color = 'C0', label = f'Value at thinning: {autoc[thinning]:.2f}')
+        ax.plot(autoc, '.', color = 'C0', label = f'At thinning: {autoc[thinning]:.2f}')
         ax.axvline(thinning, color = 'r', linestyle = 'dashed')
-        ax.text(-0.05, 0.5, par_name[i], horizontalalignment='center', verticalalignment='center', transform=ax.transAxes)
+        ax.text(-0.09, 0.5, par_name[i], horizontalalignment='center', verticalalignment='center', transform=ax.transAxes)
         ax.set_xlim(-10, 2 * thinning)
         ax.legend()
         ax.grid(linestyle = 'dashed')
@@ -358,8 +356,6 @@ if __name__ == "__main__":
     ax.set_xlabel("Lag")
     plt.tight_layout()
 
-    plt.show()
-    exit()
     
     # after burn-in and autocorrelation we plot the histograms of the parameters
     parameters = samples[::thinning,:]

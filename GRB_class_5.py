@@ -455,6 +455,9 @@ if __name__ == "__main__":
             # set x label if we are at the end
             if i+1 == len(parameters):
                 ax.set_xlabel("Lag")
+            # set label of parameter
+            if k == 0:
+                ax.text(-0.15, 0.5, par_name[i], horizontalalignment='center', verticalalignment='center', transform=ax.transAxes)
             ax.plot(autocorrelation(parameters[i]), '.', color = 'C0', label = 'Autocorrelation')
             ax.grid(linestyle = 'dashed')
             ax.set_axisbelow(True)
@@ -472,11 +475,14 @@ if __name__ == "__main__":
             # set x label if we are at the end
             if i+1 == len(parameters):
                 ax.set_xlabel("Lag")
+            # set label of parameter
+            if k == 0:
+                ax.text(-0.15, 0.5, par_name[i], horizontalalignment='center', verticalalignment='center', transform=ax.transAxes)
             # compute autocorr
             autoc = autocorrelation(parameters[i])
-            ax.plot(autoc, '.', color = 'C0', label = par_name[i]+f': {autoc[thinning]:.2f}')
+            ax.plot(autoc, '.', color = 'C0', label = f'At thinning: {autoc[thinning]:.2f}')
             ax.axvline(thinning, color='r', linestyle = 'dashed')
-            ax.set_xlim(-10, 2*thinning)
+            ax.set_xlim(-1, 2*thinning)
             ax.grid(linestyle = 'dashed')
             ax.set_axisbelow(True)
             ax.legend(fontsize='small')
