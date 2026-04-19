@@ -148,7 +148,7 @@ if __name__ == "__main__":
         ax.plot(samples2[:,i], '.', color = 'C0')
         ax.axvline(burnin, color='r', linestyle='dashed')
         ax.set_ylabel(name2_l[i])
-    ax.set_xlabel("Iteration")
+    ax.set_xlabel("Step")
     plt.tight_layout()
     
     
@@ -161,7 +161,7 @@ if __name__ == "__main__":
         ax = fig.add_subplot(5, 1, i+1)
         ax.plot(autocorrelation(samples[:,i]), '.', color = 'C0', label = 'Autocorrelation')
         ax.axvline(thinning, color='r', linestyle='dashed')
-    ax.set_xlabel("Iteration")
+    ax.set_xlabel("Step")
     plt.tight_layout()
     
     parameters = samples2[::thinning,:]
@@ -246,7 +246,7 @@ if __name__ == "__main__":
         ax.plot(samples3[:,i], '.', color = 'C0')
         ax.axvline(burnin, color='r', linestyle='dashed')
         ax.set_ylabel(name3_l[i])
-    ax.set_xlabel("Iteration")
+    ax.set_xlabel("Step")
     plt.tight_layout()
         
     samples = samples3[burnin:,:]
@@ -259,7 +259,7 @@ if __name__ == "__main__":
         ax.plot(autocorrelation(samples[:,i]), '.-', color = 'C0', label = 'Autocorrelation')
         ax.axvline(thinning, color='r', linestyle='dashed')
         ax.set_xlim(-1, 20)
-    ax.set_xlabel("Iteration")
+    ax.set_xlabel("Step")
     plt.tight_layout()
 
     parameters = samples[::thinning,:]

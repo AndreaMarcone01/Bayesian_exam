@@ -178,7 +178,7 @@ def metropolis_hastings(theta0, postpdf, data, err, bounds, rng, blind, n = 1000
             logP[i] = logP0
             rejected += 1
         
-        print(f"Iteration {i}, acceptance = {accepted/(accepted+rejected)}")
+        print(f"Step {i}, acceptance = {accepted/(accepted+rejected)}")
 
     return samples, logP
 
@@ -283,7 +283,7 @@ if __name__ == "__main__":
         ax.set_ylabel(par_name[i])
         ax.grid(linestyle = 'dashed')
         ax.set_axisbelow(True)
-    ax.set_xlabel("Iteration")
+    ax.set_xlabel("Step")
     plt.tight_layout()
 
     burnin = 300 
@@ -296,7 +296,7 @@ if __name__ == "__main__":
         ax.set_ylabel(par_name[i])
         ax.grid(linestyle = 'dashed')
         ax.set_axisbelow(True)
-    ax.set_xlabel("Iteration")
+    ax.set_xlabel("Step")
     plt.tight_layout()
 
     # look at the posterior 
@@ -304,7 +304,7 @@ if __name__ == "__main__":
     ax = fig_post0.add_subplot(111)
     ax.plot(logP, label = 'log Posterior')
     ax.set_ylabel("log Posterior")
-    ax.set_xlabel("Iteration")
+    ax.set_xlabel("Step")
     ax.grid(linestyle = 'dashed')
     ax.set_axisbelow(True)
     plt.legend()
@@ -314,7 +314,7 @@ if __name__ == "__main__":
     ax.plot(logP, marker='.', color = 'C0', label = 'log Posterior')
     ax.axvline(burnin, color = 'r', label = 'Burn-in', linestyle = 'dashed')
     ax.set_ylabel("log Posterior")
-    ax.set_xlabel("Iteration")
+    ax.set_xlabel("Step")
     ax.set_xlim(-10, 2*burnin)
     ax.grid(linestyle = 'dashed')
     ax.set_axisbelow(True)
@@ -424,8 +424,8 @@ if __name__ == "__main__":
 
     # end of point: save, show or close all the open figures
     
-    #plt.show()
-    #exit()
+    plt.show()
+    exit()
 
     fig0.savefig(main_dir+"\\Results\\1b\\Err_Dataset.png", dpi = 600)
     fig1.savefig(main_dir+"\\Results\\1b\\Err_Parameters_chain.png", dpi = 600)

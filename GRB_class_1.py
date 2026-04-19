@@ -181,7 +181,7 @@ def metropolis_hastings(theta0, postpdf, counts, center, model, bounds, rng, bli
             logP[i] = logP0
             rejected += 1
         
-        print(f"Iteration {i}, acceptance = {accepted/(accepted+rejected)}")
+        print(f"Step {i}, acceptance = {accepted/(accepted+rejected)}")
 
     return samples, logP
 
@@ -291,7 +291,7 @@ if __name__ == "__main__":
         ax.set_ylabel(par_name[i])
         ax.grid(linestyle = 'dashed')
         ax.set_axisbelow(True)
-    ax.set_xlabel("Iteration")
+    ax.set_xlabel("Step")
     plt.tight_layout()
     
     burnin = 200 
@@ -304,14 +304,14 @@ if __name__ == "__main__":
         ax.set_ylabel(par_name[i])
         ax.grid(linestyle = 'dashed')
         ax.set_axisbelow(True)
-    ax.set_xlabel("Iteration")
+    ax.set_xlabel("Step")
     plt.tight_layout()
 
     fig_post0 = plt.figure("Chain posterior")
     ax = fig_post0.add_subplot(111)
     ax.plot(logP, label = 'log Posterior')
     ax.set_ylabel("log Posterior")
-    ax.set_xlabel("Iteration")
+    ax.set_xlabel("Step")
     ax.grid(linestyle = 'dashed')
     ax.set_axisbelow(True)
     plt.legend()
@@ -322,7 +322,7 @@ if __name__ == "__main__":
     ax.axvline(burnin, color = 'r', label = 'Burn-in', linestyle = 'dashed')
     ax.set_xlim(-10, 2*burnin)
     ax.set_ylabel("log Posterior")
-    ax.set_xlabel("Iteration")
+    ax.set_xlabel("Step")
     ax.grid(linestyle = 'dashed')
     ax.set_axisbelow(True)
     plt.legend()
