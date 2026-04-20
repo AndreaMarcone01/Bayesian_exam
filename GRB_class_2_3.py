@@ -108,8 +108,8 @@ if __name__ == "__main__":
 
     fig_prob = plt.figure("Probabilities for the two class of GRB")
     ax = fig_prob.add_subplot(111)
-    ax.plot(xx, prob_short, 'g', label = "$P(S|TI)$")
-    ax.plot(xx, prob_long, color = 'darkorange', label = "$P(L|TI)$")   
+    ax.plot(xx, prob_short, 'g', label = "$P(S|TI')$")
+    ax.plot(xx, prob_long, color = 'darkorange', label = "$P(L|TI')$")   
     ax.set_xlabel("$\\log(T_{90})$")
     ax.set_xlim([-4,7])
     ax.set_ylabel("Probability")
@@ -120,8 +120,8 @@ if __name__ == "__main__":
     
     # end of point, show and or save images
 
-    #plt.show()
-    #exit()
+    plt.show()
+    exit()
 
     path = main_dir+"\\Results\\2_3\\"
     # Check if the results dir exists
