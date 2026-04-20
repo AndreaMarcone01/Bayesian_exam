@@ -296,7 +296,7 @@ if __name__ == "__main__":
     ax = fig1.add_subplot(211)
     for k in sampler.state["cluster_id_"]:
         data_k = sampler.state["data_"][sampler.state["vec_z"] == k]
-        ax.scatter(data_k[:,0], data_k[:,1], marker = '.', color = cluster_color[k], label = "Class number "+str(k))
+        ax.scatter(data_k[:,0], data_k[:,1], marker = '.', color = cluster_color[k], label = "Class "+str(k))
     ax.set_title("Initial assignment")
     ax.set_ylabel("$\\log(HR)$")
     ax.grid(linestyle = 'dashed')
@@ -386,7 +386,7 @@ if __name__ == "__main__":
     ax1 = fig1.add_subplot(212, sharex=ax)
     for k in sampler.state["cluster_id_"]:
         data_k = sampler.state["data_"][vec_z == k]
-        ax1.scatter(data_k[:,0], data_k[:,1], marker = '.', color = cluster_color[k], label = "Class number "+str(k))
+        ax1.scatter(data_k[:,0], data_k[:,1], marker = '.', color = cluster_color[k], label = "Class "+str(k))
     ax1.set_title("After "+str(n_step)+" step")
     ax1.set_xlabel("$\\log(T_{90})$")
     ax1.set_ylabel("$\\log(HR)$")
