@@ -106,8 +106,8 @@ def log_likelihood_after(theta, data, model):
         likelihood (float): log of the likelihood
     """
     
-    log_like_i = model(data, theta)
-    return np.log(np.sum(log_like_i))
+    log_like_i = np.log(model(data, theta))
+    return np.sum(log_like_i)
 
 
 def log_posterior(theta, data, model, bounds):
@@ -227,14 +227,14 @@ if __name__ == "__main__":
 
     main_dir = os.path.dirname(os.path.realpath(__file__))
     log_T90, d_log_T90, Hardness_R = np.loadtxt(main_dir+"\\Data\\GRB_data.txt", unpack=True)
-    
+    """
     print(f"Minimum is: {np.min(log_T90):.2f}")
     print(f"Maximum is: {np.max(log_T90):.2f}")
     print(f"Difference minimum is: {np.min(np.diff(log_T90)):.2f}")
     print(f"Maximum error is: {np.max(d_log_T90):.2e}")
     print(f"Mean error is: {np.mean(d_log_T90):.2e}")
     print(f"Median error is: {np.median(d_log_T90):.2e}")
-    
+    """
     nbins = 50
     bins = np.linspace(-4, 7, nbins)                        # bins of the histogram
     xx = np.linspace(-4,7,256)                              # linearspace for smooth plots
@@ -252,11 +252,15 @@ if __name__ == "__main__":
                         rng.uniform(0.01,3)])
     theta_fit = np.array([0.4, -0.5, 1.5, 3.6, 0.8])
     
+    
     """
     # plot the data
+    scale = np.diff(bins)[0]*np.sum(counts)
     fig0 = plt.figure("Data and model")
     ax = fig0.add_subplot(111)
     ax.stairs(counts, edges, color = 'C0', label = 'Data', linewidth=1.5)
+    ax.plot(xx, weighted_log_normal(xx, theta_0)*scale, color = 'r', label = 'random')
+    ax.plot(xx, weighted_log_normal(xx, theta_fit)*scale, color = 'green', label = 'eye fitted')    
     ax.set_xlabel("$\\log(T_{90})$")
     ax.set_ylabel("Counts")
     ax.set_ylim(0,170)
@@ -264,14 +268,12 @@ if __name__ == "__main__":
     ax.set_axisbelow(True)
     plt.legend()
     #fig0.savefig(main_dir+"\\Results\\Data.png", dpi = 600)
-    plt.show()
-    exit()
     """
 
     # try to initialise things
-    run = True
+    run = False
     prep_run = True
-    save = False
+    save = True
 
     if run == True:
         samples, logP = metropolis_hastings(theta_0, log_posterior, log_T90, 
@@ -279,7 +281,7 @@ if __name__ == "__main__":
         
         # use this first estimate to adjust the proposal
         covariance = np.cov(samples.T)
-        np.savetxt(main_dir+"\\Data\\samples_covariance.txt", covariance)
+        np.savetxt(main_dir+"\\Data\\A_samples_covariance.txt", covariance)
 
         if prep_run == True:
             # re-run chain with new covariance in proposal
@@ -289,12 +291,12 @@ if __name__ == "__main__":
         # save the chain
         if save == True:
             header = "w , mu_1, sigma_1, mu_2, sigma_2"
-            np.savetxt(main_dir+"\\Data\\samples_chain.txt", samples, header=header)
-            np.savetxt(main_dir+"\\Data\\samples_posterior.txt", logP, header="log posterior")
+            np.savetxt(main_dir+"\\Data\\A_samples_chain.txt", samples, header=header)
+            np.savetxt(main_dir+"\\Data\\A_samples_posterior.txt", logP, header="log posterior")
 
     else: 
-        samples = np.loadtxt(main_dir+"\\Data\\samples_chain.txt")
-        logP = np.loadtxt(main_dir+"\\Data\\samples_posterior.txt")
+        samples = np.loadtxt(main_dir+"\\Data\\A_samples_chain.txt")
+        logP = np.loadtxt(main_dir+"\\Data\\A_samples_posterior.txt")
         
 
     # Look at the results
@@ -308,7 +310,7 @@ if __name__ == "__main__":
     ax.set_xlabel("Step")
     plt.tight_layout()
     
-    burnin = 200 
+    burnin = 2500 
     fig2 = plt.figure("Parameters chain: zoom to burn-in", figsize = (6,6))
     for i in range(samples.shape[1]):
         ax = fig2.add_subplot(5, 1, i+1)
@@ -355,7 +357,7 @@ if __name__ == "__main__":
     ax.set_xlabel("Lag")
     plt.tight_layout()
 
-    thinning = 125
+    thinning = 2000
     fig4 = plt.figure("Parameters autocorrelation: zoom to thinning", figsize = (6,6))
     for i in range(samples.shape[1]):
         ax = fig4.add_subplot(5, 1, i+1)
